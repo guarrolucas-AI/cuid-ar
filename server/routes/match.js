@@ -1,25 +1,29 @@
 import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { auth } from '../middleware/auth.js'
+import { sendEmail, tpl } from '../lib/email.js'
 
 const router = Router()
+
+const CATEGORY_LABELS = {
+  infantil: 'Cuidado Infantil', pedagogico: 'Apoyo Pedagógico',
+  salud: 'Salud Pediátrica', terapeutico: 'Cuidado Terapéutico', limpieza: 'Limpieza del Hogar',
+}
 
 // GET /api/match/search?zone=CABA&category=infantil&maxRate=8000
 router.get('/search', auth, async (req, res) => {
   try {
     const { zone, category, maxRate } = req.query
-
     const professionals = await prisma.professional.findMany({
       where: {
         available: true,
-        ...(zone && { zone }),
+        ...(zone     && { zone }),
         ...(category && { category }),
-        ...(maxRate && { hourlyRate: { lte: parseFloat(maxRate) } }),
+        ...(maxRate  && { hourlyRate: { lte: parseFloat(maxRate) } }),
       },
       orderBy: { hourlyRate: 'asc' },
       include: { user: { select: { email: true, status: true } } },
     })
-
     res.json(professionals)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -32,28 +36,17 @@ router.post('/notify', auth, async (req, res) => {
     const { professionalId, category } = req.body
 
     const [professional, parent] = await Promise.all([
-      prisma.professional.findUnique({
-        where: { userId: professionalId },
-        include: { user: true },
-      }),
+      prisma.professional.findUnique({ where: { userId: professionalId }, include: { user: true } }),
       prisma.parent.findUnique({ where: { userId: req.user.id } }),
     ])
 
-    if (!professional || !parent) {
-      return res.status(404).json({ error: 'Datos no encontrados' })
-    }
+    if (!professional || !parent) return res.status(404).json({ error: 'Datos no encontrados' })
 
-    // Payload listo para conectar con Resend o Twilio en producción
-    const notification = {
-      to: professional.user.email,
-      subject: 'CUID_AR — Nueva búsqueda en tu zona',
-      body: `Hola ${professional.name}, una familia en ${parent.address} está buscando un profesional de ${category}. Ingresá a la plataforma para conectarte.`,
-    }
+    const label = CATEGORY_LABELS[category] ?? category
+    const { subject, html } = tpl.notify(professional.name, parent.address, label)
+    await sendEmail({ to: professional.user.email, subject, html })
 
-    // TODO: await resend.emails.send(notification)
-    console.log('[NOTIFY]', notification)
-
-    res.json({ success: true, notification })
+    res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

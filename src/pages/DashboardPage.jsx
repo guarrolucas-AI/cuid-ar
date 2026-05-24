@@ -64,7 +64,7 @@ export default function DashboardPage() {
             name: user.email, verified: false, available: true, hourlyRate: 0, category: ''
           }} />
         )}
-        {user?.role === 'padre' && <DashboardParent />}
+        {user?.role === 'padre' && <DashboardParent user={user} profile={profile} />}
         {user?.role === 'admin'  && <AdminDashboard />}
       </main>
     </div>

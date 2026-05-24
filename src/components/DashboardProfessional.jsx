@@ -1,140 +1,189 @@
 import { useState } from 'react'
-import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, DollarSign, Save } from 'lucide-react'
+import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
-const CATEGORY_LABELS = {
-  infantil: 'Cuidado Infantil',
-  pedagogico: 'Apoyo Pedagógico',
-  salud: 'Salud Pediátrica',
-  terapeutico: 'Cuidado Terapéutico',
-  limpieza: 'Limpieza del Hogar',
+const ZONES      = ['CABA','GBA_Norte','GBA_Sur','GBA_Oeste']
+const ZONE_LABELS = { CABA:'CABA', GBA_Norte:'GBA Norte', GBA_Sur:'GBA Sur', GBA_Oeste:'GBA Oeste' }
+const CATEGORIES  = [
+  { value:'infantil',    label:'Cuidado Infantil' },
+  { value:'pedagogico',  label:'Apoyo Pedagógico' },
+  { value:'salud',       label:'Salud Pediátrica' },
+  { value:'terapeutico', label:'Cuidado Terapéutico' },
+  { value:'limpieza',    label:'Limpieza del Hogar' },
+]
+
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${localStorage.getItem('token')}`,
+})
+
+function useToast() {
+  const [toast, setToast] = useState(null)
+  const show = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 2500) }
+  return [toast, show]
 }
 
-export default function DashboardProfessional({ user, professional: initialPro }) {
-  const [pro, setPro] = useState(initialPro)
-  const [rate, setRate] = useState(String(initialPro.hourlyRate))
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+export default function DashboardProfessional({ user, professional: init }) {
+  const [pro,  setPro]  = useState(init)
+  const [toast, notify] = useToast()
 
   const patch = async (body) => {
     const res = await fetch(`${API_BASE}/api/professional/me`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify(body),
+      method: 'PATCH', headers: authHeaders(), body: JSON.stringify(body),
     })
+    if (!res.ok) throw new Error((await res.json()).error)
     return res.json()
-  }
-
-  const toggleAvailable = async () => {
-    const next = !pro.available
-    setPro((p) => ({ ...p, available: next }))
-    await patch({ available: next })
-  }
-
-  const saveRate = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    const updated = await patch({ hourlyRate: parseFloat(rate) })
-    setPro((p) => ({ ...p, hourlyRate: updated.hourlyRate }))
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
   }
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-5">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold text-white ${toast.ok ? 'bg-teal-500' : 'bg-red-500'}`}>
+          {toast.msg}
+        </div>
+      )}
 
-      {/* Encabezado */}
+      {/* Header */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
         <div>
           <h2 className="font-heading text-2xl font-bold text-gray-800">{pro.name}</h2>
           <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
           <span className="mt-2 inline-block text-xs font-semibold bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
-            {CATEGORY_LABELS[pro.category] ?? pro.category}
+            {CATEGORIES.find(c => c.value === pro.category)?.label ?? pro.category}
           </span>
         </div>
-
-        {/* Badge verificación */}
-        {pro.verified ? (
-          <div className="flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full border border-teal-200 flex-shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-            <span className="text-sm font-semibold">Verificado</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-full border border-amber-200 flex-shrink-0">
-            <ShieldX className="w-5 h-5" />
-            <span className="text-sm font-semibold">Pendiente de verificación</span>
-          </div>
-        )}
+        {pro.verified
+          ? <div className="flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full border border-teal-200 flex-shrink-0">
+              <ShieldCheck className="w-5 h-5" /><span className="text-sm font-semibold">Verificado</span>
+            </div>
+          : <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-full border border-amber-200 flex-shrink-0">
+              <ShieldX className="w-5 h-5" /><span className="text-sm font-semibold">Pendiente de verificación</span>
+            </div>
+        }
       </div>
 
-      {/* Toggle disponibilidad */}
+      {/* Disponibilidad */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="font-heading font-bold text-gray-800 mb-4">Disponibilidad</h3>
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-gray-700">
-              {pro.available ? 'Estoy disponible para nuevas consultas' : 'No estoy disponible en este momento'}
+              {pro.available ? 'Disponible para nuevas consultas' : 'No disponible en este momento'}
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              {pro.available
-                ? 'Las familias pueden encontrarte en los resultados de búsqueda'
-                : 'No aparecés en ninguna búsqueda hasta que volvás a activarte'}
+              {pro.available ? 'Aparecés en los resultados de búsqueda' : 'No aparecés en ninguna búsqueda'}
             </p>
           </div>
           <button
-            onClick={toggleAvailable}
+            onClick={async () => {
+              try {
+                const u = await patch({ available: !pro.available })
+                setPro(p => ({ ...p, available: u.available }))
+              } catch (e) { notify(e.message, false) }
+            }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold text-sm transition-all flex-shrink-0 ${
-              pro.available
-                ? 'bg-teal-500 text-white hover:bg-teal-600'
-                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+              pro.available ? 'bg-teal-500 text-white hover:bg-teal-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
             }`}
           >
-            {pro.available
-              ? <><ToggleRight className="w-5 h-5" /> Activo</>
-              : <><ToggleLeft className="w-5 h-5" /> Inactivo</>}
+            {pro.available ? <><ToggleRight className="w-5 h-5"/>Activo</> : <><ToggleLeft className="w-5 h-5"/>Inactivo</>}
           </button>
         </div>
       </div>
 
-      {/* Tarifa horaria */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="font-heading font-bold text-gray-800 mb-1">Tarifa por hora</h3>
-        <p className="text-xs text-gray-400 mb-4">
-          Tarifa actual: <span className="font-semibold text-teal-600">${Number(pro.hourlyRate).toLocaleString('es-AR')}/hr</span>
-        </p>
-        <form onSubmit={saveRate} className="flex gap-3">
-          <div className="relative flex-1">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
-            <input
-              type="number"
-              value={rate}
-              onChange={(e) => setRate(e.target.value)}
-              min="0"
-              step="100"
-              required
-              className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl text-gray-800 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400"
-              placeholder="Ej: 5900"
-            />
+      {/* Mi perfil */}
+      <ProfileForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+
+      {/* Tarifa */}
+      <RateForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+    </div>
+  )
+}
+
+function ProfileForm({ pro, setPro, patch, notify }) {
+  const [form, setForm] = useState({ name: pro.name, phone: pro.phone, zone: pro.zone, category: pro.category })
+  const [saving, setSaving] = useState(false)
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const inputClass = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400'
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const u = await patch(form)
+      setPro(p => ({ ...p, ...u }))
+      notify('Perfil actualizado')
+    } catch (err) { notify(err.message, false) }
+    setSaving(false)
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <h3 className="font-heading font-bold text-gray-800 mb-5">Mi Perfil</h3>
+      <form onSubmit={handleSave} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><User className="w-3.5 h-3.5"/>Nombre</label>
+            <input value={form.name} onChange={e => set('name', e.target.value)} required className={inputClass}/>
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className={`flex items-center gap-2 px-5 py-3 font-semibold rounded-xl transition-colors text-sm flex-shrink-0 ${
-              saved
-                ? 'bg-green-100 text-green-700'
-                : 'bg-teal-500 text-white hover:bg-teal-600 disabled:opacity-60'
-            }`}
-          >
-            <Save className="w-4 h-4" />
-            {saved ? '¡Guardado!' : saving ? 'Guardando...' : 'Guardar'}
-          </button>
-        </form>
-      </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><Phone className="w-3.5 h-3.5"/>Teléfono</label>
+            <input value={form.phone} onChange={e => set('phone', e.target.value)} required className={inputClass}/>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>Zona</label>
+            <select value={form.zone} onChange={e => set('zone', e.target.value)} required className={inputClass}>
+              {ZONES.map(z => <option key={z} value={z}>{ZONE_LABELS[z]}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><Tag className="w-3.5 h-3.5"/>Especialidad</label>
+            <select value={form.category} onChange={e => set('category', e.target.value)} required className={inputClass}>
+              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 text-sm">
+          <Save className="w-4 h-4"/>{saving ? 'Guardando…' : 'Guardar perfil'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+function RateForm({ pro, setPro, patch, notify }) {
+  const [rate, setRate]   = useState(String(pro.hourlyRate))
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const u = await patch({ hourlyRate: parseFloat(rate) })
+      setPro(p => ({ ...p, hourlyRate: u.hourlyRate }))
+      notify('Tarifa actualizada')
+    } catch (err) { notify(err.message, false) }
+    setSaving(false)
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <h3 className="font-heading font-bold text-gray-800 mb-1">Tarifa por hora</h3>
+      <p className="text-xs text-gray-400 mb-4">Actual: <span className="font-semibold text-teal-600">${Number(pro.hourlyRate).toLocaleString('es-AR')}/hr</span></p>
+      <form onSubmit={handleSave} className="flex gap-3">
+        <div className="relative flex-1">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
+          <input type="number" value={rate} onChange={e => setRate(e.target.value)} min="0" step="100" required
+            className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+        </div>
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 px-5 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 disabled:opacity-60 text-sm flex-shrink-0">
+          <Save className="w-4 h-4"/>{saving ? 'Guardando…' : 'Guardar'}
+        </button>
+      </form>
     </div>
   )
 }

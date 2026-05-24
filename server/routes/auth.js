@@ -2,6 +2,7 @@ import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../lib/prisma.js'
+import { sendEmail, tpl } from '../lib/email.js'
 
 const router = Router()
 
@@ -36,6 +37,12 @@ router.post('/register', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' })
     const profile = user.professional ?? user.parent ?? null
+
+    // Email de bienvenida (no bloqueante)
+    const profileName = profile?.name ?? email
+    const { subject, html } = tpl.welcome(profileName, role)
+    sendEmail({ to: email, subject, html }).catch(console.error)
+
     res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role, status: user.status }, profile })
   } catch (err) {
     res.status(500).json({ error: err.message })

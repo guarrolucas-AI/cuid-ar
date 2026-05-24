@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import {
-  Settings, Users, ShieldCheck, ToggleLeft, ToggleRight,
+  Settings, Users, ShieldCheck, ShieldX, ToggleLeft, ToggleRight,
   Save, Eye, EyeOff, RefreshCw, CheckCircle, AlertCircle, Lock,
+  MapPin, Tag, Phone, Filter,
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -229,10 +230,154 @@ export default function AdminDashboard() {
         </form>
       </section>
 
+      {/* Lista de profesionales */}
+      <ProfessionalsSection notify={notify} />
+
       {/* Cambio de contraseña */}
       <ChangePasswordSection notify={notify} />
 
     </div>
+  )
+}
+
+const ZONE_LABELS = { CABA:'CABA', GBA_Norte:'GBA Norte', GBA_Sur:'GBA Sur', GBA_Oeste:'GBA Oeste' }
+
+// ── Sección lista de profesionales ────────────────────────────────────────
+function ProfessionalsSection({ notify }) {
+  const [pros, setPros]       = useState([])
+  const [loading, setLoading] = useState(false)
+  const [filters, setFilters] = useState({ category:'', zone:'', verified:'' })
+  const [verifying, setVerifying] = useState({})
+
+  const load = async (f = filters) => {
+    setLoading(true)
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(f).filter(([,v]) => v !== '')))
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/professionals?${params}`, { headers: headers() })
+      setPros(await res.json())
+    } catch { setPros([]) }
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: v }))
+
+  const handleVerify = async (pro, verified) => {
+    setVerifying(v => ({ ...v, [pro.userId]: true }))
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/verify/${pro.userId}`, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ verified }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setPros(ps => ps.map(p => p.userId === pro.userId ? { ...p, verified } : p))
+      notify('ok', verified ? `${pro.name} verificado/a` : `${pro.name} desverificado/a`)
+    } catch (err) {
+      notify('err', err.message)
+    }
+    setVerifying(v => ({ ...v, [pro.userId]: false }))
+  }
+
+  const selectClass = 'pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400 appearance-none bg-white'
+
+  return (
+    <section>
+      <h2 className="font-heading font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <ShieldCheck className="w-5 h-5 text-teal-500" /> Profesionales
+      </h2>
+
+      {/* Filtros */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="relative">
+            <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"/>
+            <select value={filters.category} onChange={e => setFilter('category', e.target.value)} className={selectClass}>
+              <option value="">Todas las especialidades</option>
+              {Object.entries(CATEGORY_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+          <div className="relative">
+            <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"/>
+            <select value={filters.zone} onChange={e => setFilter('zone', e.target.value)} className={selectClass}>
+              <option value="">Todas las zonas</option>
+              {Object.entries(ZONE_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+          <div className="relative">
+            <ShieldCheck className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"/>
+            <select value={filters.verified} onChange={e => setFilter('verified', e.target.value)} className={selectClass}>
+              <option value="">Todos</option>
+              <option value="true">Solo verificados</option>
+              <option value="false">Solo pendientes</option>
+            </select>
+          </div>
+          <button
+            onClick={() => load(filters)}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white text-sm font-semibold rounded-xl hover:bg-teal-600 transition-colors"
+          >
+            <Filter className="w-3.5 h-3.5"/> Filtrar
+          </button>
+        </div>
+
+        {/* Tabla */}
+        {loading ? (
+          <div className="flex items-center justify-center py-10 text-gray-400">
+            <RefreshCw className="w-5 h-5 animate-spin mr-2"/> Cargando…
+          </div>
+        ) : pros.length === 0 ? (
+          <p className="text-center py-10 text-sm text-gray-400">No hay profesionales con esos filtros.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-500 border-b border-gray-100">
+                  <th className="text-left py-2 pr-4 font-semibold">Nombre</th>
+                  <th className="text-left py-2 pr-4 font-semibold">Email</th>
+                  <th className="text-left py-2 pr-4 font-semibold hidden sm:table-cell">Especialidad</th>
+                  <th className="text-left py-2 pr-4 font-semibold hidden md:table-cell">Zona</th>
+                  <th className="text-left py-2 pr-4 font-semibold hidden md:table-cell">Tarifa/hr</th>
+                  <th className="text-left py-2 font-semibold">Estado</th>
+                  <th className="py-2"/>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {pros.map(pro => (
+                  <tr key={pro.userId} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 pr-4 font-medium text-gray-800">{pro.name}</td>
+                    <td className="py-3 pr-4 text-gray-500 text-xs">{pro.user?.email}</td>
+                    <td className="py-3 pr-4 text-gray-600 hidden sm:table-cell">{CATEGORY_LABELS[pro.category] ?? pro.category}</td>
+                    <td className="py-3 pr-4 text-gray-600 hidden md:table-cell">{ZONE_LABELS[pro.zone] ?? pro.zone}</td>
+                    <td className="py-3 pr-4 text-teal-600 font-semibold hidden md:table-cell">${Number(pro.hourlyRate).toLocaleString('es-AR')}</td>
+                    <td className="py-3 pr-4">
+                      {pro.verified
+                        ? <span className="flex items-center gap-1 text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-1 rounded-full w-fit"><ShieldCheck className="w-3 h-3"/>Verificado</span>
+                        : <span className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-full w-fit"><ShieldX className="w-3 h-3"/>Pendiente</span>
+                      }
+                    </td>
+                    <td className="py-3">
+                      <button
+                        disabled={verifying[pro.userId]}
+                        onClick={() => handleVerify(pro, !pro.verified)}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap ${
+                          pro.verified
+                            ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                            : 'bg-teal-500 text-white hover:bg-teal-600'
+                        }`}
+                      >
+                        {verifying[pro.userId] ? '…' : pro.verified ? 'Quitar verificación' : 'Verificar'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-xs text-gray-400 mt-3">{pros.length} profesional{pros.length !== 1 ? 'es' : ''}</p>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
