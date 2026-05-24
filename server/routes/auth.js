@@ -35,7 +35,8 @@ router.post('/register', async (req, res) => {
     })
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' })
-    res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role } })
+    const profile = user.professional ?? user.parent ?? null
+    res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role, status: user.status }, profile })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -46,14 +47,18 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body
 
-    const user = await prisma.user.findUnique({ where: { email } })
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { professional: true, parent: true },
+    })
     if (!user) return res.status(401).json({ error: 'Credenciales inválidas' })
 
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) return res.status(401).json({ error: 'Credenciales inválidas' })
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' })
-    res.json({ token, user: { id: user.id, email: user.email, role: user.role, status: user.status } })
+    const profile = user.professional ?? user.parent ?? null
+    res.json({ token, user: { id: user.id, email: user.email, role: user.role, status: user.status }, profile })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

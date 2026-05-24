@@ -1,24 +1,28 @@
-import Navbar from './components/Navbar'
-import HeroCarousel from './components/HeroCarousel'
-import Nosotros from './components/Nosotros'
-import Servicios from './components/Servicios'
-import Aranceles from './components/Aranceles'
-import CapturaLeads from './components/CapturaLeads'
-import Footer from './components/Footer'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
+
+import LandingPage from './pages/LandingPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import DashboardPage from './pages/DashboardPage'
 
 function App() {
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <main>
-        <HeroCarousel />
-        <Nosotros />
-        <Servicios />
-        <Aranceles />
-        <CapturaLeads />
-      </main>
-      <Footer />
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/"          element={<LandingPage />} />
+          <Route path="/login"     element={<LoginPage />} />
+          <Route path="/register"  element={<RegisterPage />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 

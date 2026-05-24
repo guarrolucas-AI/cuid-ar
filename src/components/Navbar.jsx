@@ -39,7 +39,7 @@ export default function Navbar() {
               </a>
             ))}
             <a
-              href="#registro"
+              href="/login"
               className="px-5 py-2 bg-teal-500 text-white text-sm font-semibold rounded-full hover:bg-teal-600 transition-colors shadow-md hover:shadow-lg"
             >
               Ingresar / Registrarse
@@ -71,7 +71,7 @@ export default function Navbar() {
             </a>
           ))}
           <a
-            href="#registro"
+            href="/login"
             className="block w-full text-center px-5 py-3 bg-teal-500 text-white text-sm font-semibold rounded-full hover:bg-teal-600 transition-colors mt-3"
             onClick={() => setIsOpen(false)}
           >
