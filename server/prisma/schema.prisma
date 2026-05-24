@@ -39,3 +39,12 @@ model Parent {
   lat     Float?
   lng     Float?
 }
+
+// Configuración global de la plataforma — editable desde el panel de admin
+model AppConfig {
+  key       String   @id  // ej: 'mp_access_token', 'mp_price_ars', 'mp_enabled'
+  value     String
+  label     String          // descripción legible para el panel
+  sensitive Boolean  @default(false)  // si true, el GET enmascara el valor
+  updatedAt DateTime @updatedAt
+}
