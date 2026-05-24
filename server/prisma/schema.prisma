@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  password     String
+  role         String        // 'padre' | 'profesional' | 'admin'
+  status       String        @default("active") // 'active' | 'subscribed'
+  createdAt    DateTime      @default(now())
+  professional Professional?
+  parent       Parent?
+}
+
+model Professional {
+  userId     String  @id
+  user       User    @relation(fields: [userId], references: [id])
+  name       String
+  phone      String
+  zone       String  // 'CABA' | 'GBA_Norte' | 'GBA_Sur' | 'GBA_Oeste'
+  category   String  // 'infantil' | 'pedagogico' | 'salud' | 'terapeutico' | 'limpieza'
+  verified   Boolean @default(false)
+  hourlyRate Float
+  available  Boolean @default(true)
+}
+
+model Parent {
+  userId  String  @id
+  user    User    @relation(fields: [userId], references: [id])
+  name    String
+  phone   String
+  address String
+  lat     Float?
+  lng     Float?
+}
