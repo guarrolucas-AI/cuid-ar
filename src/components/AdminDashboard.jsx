@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
-  Settings, Users, Briefcase, ShieldCheck, ToggleLeft, ToggleRight,
-  Save, Eye, EyeOff, RefreshCw, CheckCircle, AlertCircle,
+  Settings, Users, ShieldCheck, ToggleLeft, ToggleRight,
+  Save, Eye, EyeOff, RefreshCw, CheckCircle, AlertCircle, Lock,
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -229,16 +229,84 @@ export default function AdminDashboard() {
         </form>
       </section>
 
-      {/* Acceso rápido — verificación de profesionales */}
-      <section>
-        <h2 className="font-heading font-bold text-gray-700 mb-2 flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-teal-500" /> Verificación de Profesionales
-        </h2>
-        <p className="text-sm text-gray-500">
-          Usá el endpoint <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">POST /api/admin/verify/:userId</code> con <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{"{ verified: true }"}</code> para aprobar un profesional desde Postman o desde el futuro panel de gestión.
-        </p>
-      </section>
+      {/* Cambio de contraseña */}
+      <ChangePasswordSection notify={notify} />
 
     </div>
+  )
+}
+
+// ── Sección cambio de contraseña ───────────────────────────────────────────
+function ChangePasswordSection({ notify }) {
+  const [form, setForm]     = useState({ currentPassword: '', newPassword: '', confirm: '' })
+  const [saving, setSaving] = useState(false)
+  const [show, setShow]     = useState(false)
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (form.newPassword !== form.confirm) return notify('err', 'Las contraseñas nuevas no coinciden')
+    if (form.newPassword.length < 6)       return notify('err', 'Mínimo 6 caracteres')
+    setSaving(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/account/password`, {
+        method: 'PATCH',
+        headers: headers(),
+        body: JSON.stringify({ currentPassword: form.currentPassword, newPassword: form.newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setForm({ currentPassword: '', newPassword: '', confirm: '' })
+      notify('ok', 'Contraseña actualizada correctamente')
+    } catch (err) {
+      notify('err', err.message)
+    }
+    setSaving(false)
+  }
+
+  const inputClass = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400'
+
+  return (
+    <section>
+      <h2 className="font-heading font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <Lock className="w-5 h-5 text-teal-500" /> Cambiar Contraseña
+      </h2>
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 max-w-md">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña actual</label>
+          <div className="relative">
+            <input
+              type={show ? 'text' : 'password'}
+              required
+              value={form.currentPassword}
+              onChange={(e) => set('currentPassword', e.target.value)}
+              placeholder="Tu contraseña actual"
+              className={`${inputClass} pr-10`}
+            />
+            <button type="button" onClick={() => setShow(!show)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nueva contraseña</label>
+          <input type="password" required minLength={6} value={form.newPassword}
+            onChange={(e) => set('newPassword', e.target.value)}
+            placeholder="Mínimo 6 caracteres" className={inputClass} />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Confirmar nueva contraseña</label>
+          <input type="password" required value={form.confirm}
+            onChange={(e) => set('confirm', e.target.value)}
+            placeholder="Repetí la nueva contraseña" className={inputClass} />
+        </div>
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 px-6 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60">
+          <Save className="w-4 h-4" />
+          {saving ? 'Guardando…' : 'Actualizar contraseña'}
+        </button>
+      </form>
+    </section>
   )
 }
