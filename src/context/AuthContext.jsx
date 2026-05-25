@@ -54,6 +54,19 @@ export function AuthProvider({ children }) {
     return data.user
   }
 
+  const refreshUser = async () => {
+    const tok = localStorage.getItem('token')
+    if (!tok) return
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      persist(tok, data.user, data.profile ?? null)
+    } catch { /* silent */ }
+  }
+
   const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -64,7 +77,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, profile, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, profile, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

@@ -189,6 +189,25 @@ export default function DashboardParent({ user, profile: init }) {
 }
 
 function ParentPaymentWall() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
+
+  const handleSubscribe = async () => {
+    setLoading(true); setError('')
+    try {
+      const res = await fetch(`${API_BASE}/api/checkout/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      window.location.href = data.init_point
+    } catch (err) {
+      setError(err.message)
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="bg-white rounded-2xl p-8 shadow-sm border border-red-100 text-center space-y-4">
       <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
@@ -203,9 +222,15 @@ function ParentPaymentWall() {
         <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Contactar y notificar</p>
         <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Ver perfiles verificados</p>
       </div>
-      <p className="text-xs text-gray-400 pt-2">
-        Comunicate con el equipo de CUID_AR para activar tu cuenta o aguardá la confirmación de tu pago.
-      </p>
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      <button
+        onClick={handleSubscribe}
+        disabled={loading}
+        className="inline-flex items-center gap-2 px-8 py-3 bg-teal-500 text-white font-bold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 text-sm"
+      >
+        <CreditCard className="w-4 h-4"/>
+        {loading ? 'Redirigiendo…' : 'Suscribirme ahora'}
+      </button>
     </div>
   )
 }

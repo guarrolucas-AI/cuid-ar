@@ -38,7 +38,7 @@ router.post('/subscribe', auth, async (req, res) => {
           transaction_amount: parseFloat(config.mp_price_ars || '5000'),
           currency_id: 'ARS',
         },
-        back_url: `${process.env.FRONTEND_URL}/dashboard`,
+        back_url: `${process.env.FRONTEND_URL}/dashboard?payment=1`,
         status: 'pending',
       },
     })

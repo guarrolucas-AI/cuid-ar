@@ -4,27 +4,45 @@ import { prisma } from '../lib/prisma.js'
 
 const router = Router()
 
+async function getMPToken() {
+  const row = await prisma.appConfig.findUnique({ where: { key: 'mp_access_token' } })
+  return row?.value || null
+}
+
 // POST /api/webhooks/mercadopago
 router.post('/mercadopago', async (req, res) => {
   try {
-    const { action, data } = req.body
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+    const { type, action, data } = body
 
-    // Solo procesamos eventos de suscripción autorizada
-    if (action !== 'subscription_preapproval') return res.sendStatus(200)
+    // MP envía type='subscription_preapproval' para eventos de suscripción
+    const isSubscription = type === 'subscription_preapproval' ||
+      action === 'subscription_preapproval'
+    if (!isSubscription || !data?.id) return res.sendStatus(200)
 
-    const mp = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN })
+    const token = await getMPToken()
+    if (!token) return res.sendStatus(200)
+
+    const mp = new MercadoPagoConfig({ accessToken: token })
     const preApproval = new PreApproval(mp)
     const subscription = await preApproval.get({ id: data.id })
 
+    console.log('[WEBHOOK MP] status:', subscription.status, 'email:', subscription.payer_email)
+
     if (subscription.status === 'authorized') {
-      const user = await prisma.user.findFirst({
-        where: { email: subscription.payer_email },
-      })
+      const user = await prisma.user.findFirst({ where: { email: subscription.payer_email } })
       if (user) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { status: 'subscribed' },
-        })
+        await prisma.user.update({ where: { id: user.id }, data: { status: 'subscribed' } })
+        console.log('[WEBHOOK MP] Usuario suscripto:', user.email)
+      }
+    }
+
+    // Si se cancela o pausa, desactivar
+    if (['cancelled', 'paused'].includes(subscription.status)) {
+      const user = await prisma.user.findFirst({ where: { email: subscription.payer_email } })
+      if (user) {
+        await prisma.user.update({ where: { id: user.id }, data: { status: 'active' } })
+        console.log('[WEBHOOK MP] Suscripción desactivada:', user.email)
       }
     }
 

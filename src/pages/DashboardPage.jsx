@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import DashboardProfessional from '../components/DashboardProfessional'
@@ -13,8 +14,18 @@ const ROLE_BADGE  = {
 }
 
 export default function DashboardPage() {
-  const { user, profile, logout } = useAuth()
+  const { user, profile, logout, refreshUser } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    // Siempre refresca el estado del usuario al entrar al dashboard.
+    // Si viene de MP (?payment=1), limpia el param después de refrescar.
+    const fromPayment = searchParams.get('payment') === '1'
+    refreshUser().then(() => {
+      if (fromPayment) setSearchParams({}, { replace: true })
+    })
+  }, [])
 
   const handleLogout = () => {
     logout()
