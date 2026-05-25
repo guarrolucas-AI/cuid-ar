@@ -9,43 +9,65 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  password     String
-  role         String        // 'padre' | 'profesional' | 'admin'
-  status       String        @default("active") // 'active' | 'subscribed'
-  createdAt    DateTime      @default(now())
-  professional Professional?
-  parent       Parent?
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  password            String
+  role                String
+  status              String               @default("active")
+  createdAt           DateTime             @default(now())
+  professional        Professional?
+  parent              Parent?
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Professional {
-  userId     String  @id
-  user       User    @relation(fields: [userId], references: [id])
-  name       String
-  phone      String
-  zone       String  // 'CABA' | 'GBA_Norte' | 'GBA_Sur' | 'GBA_Oeste'
-  category   String  // 'infantil' | 'pedagogico' | 'salud' | 'terapeutico' | 'limpieza'
-  verified   Boolean @default(false)
-  hourlyRate Float
-  available  Boolean @default(true)
+  userId          String           @id
+  user            User             @relation(fields: [userId], references: [id])
+  name            String
+  phone           String
+  zone            String
+  category        String
+  verified        Boolean          @default(false)
+  hourlyRate      Float
+  available       Boolean          @default(true)
+  contactRequests ContactRequest[]
 }
 
 model Parent {
-  userId  String  @id
-  user    User    @relation(fields: [userId], references: [id])
-  name    String
-  phone   String
-  address String
-  lat     Float?
-  lng     Float?
+  userId          String           @id
+  user            User             @relation(fields: [userId], references: [id])
+  name            String
+  phone           String
+  address         String
+  lat             Float?
+  lng             Float?
+  contactRequests ContactRequest[]
 }
 
-// Configuración global de la plataforma — editable desde el panel de admin
+model ContactRequest {
+  id             String       @id @default(uuid())
+  professional   Professional @relation(fields: [professionalId], references: [userId])
+  professionalId String
+  parent         Parent       @relation(fields: [parentId], references: [userId])
+  parentId       String
+  category       String
+  createdAt      DateTime     @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
 model AppConfig {
-  key       String   @id  // ej: 'mp_access_token', 'mp_price_ars', 'mp_enabled'
+  key       String   @id
   value     String
-  label     String          // descripción legible para el panel
-  sensitive Boolean  @default(false)  // si true, el GET enmascara el valor
+  label     String
+  sensitive Boolean  @default(false)
   updatedAt DateTime @updatedAt
 }

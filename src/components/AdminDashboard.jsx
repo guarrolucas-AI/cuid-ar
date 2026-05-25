@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Settings, Users, ShieldCheck, ShieldX, ToggleLeft, ToggleRight,
   Save, Eye, EyeOff, RefreshCw, CheckCircle, AlertCircle, Lock,
@@ -233,6 +233,9 @@ export default function AdminDashboard() {
       {/* Lista de profesionales */}
       <ProfessionalsSection notify={notify} />
 
+      {/* Lista de familias */}
+      <ParentsSection />
+
       {/* Cambio de contraseña */}
       <ChangePasswordSection notify={notify} />
 
@@ -374,6 +377,64 @@ function ProfessionalsSection({ notify }) {
               </tbody>
             </table>
             <p className="text-xs text-gray-400 mt-3">{pros.length} profesional{pros.length !== 1 ? 'es' : ''}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+// ── Sección lista de familias ─────────────────────────────────────────────
+function ParentsSection() {
+  const [parents, setParents]   = useState([])
+  const [loading, setLoading]   = useState(true)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/admin/parents`, { headers: headers() })
+      .then(r => r.json())
+      .then(data => { setParents(Array.isArray(data) ? data : []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  return (
+    <section>
+      <h2 className="font-heading font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <Users className="w-5 h-5 text-teal-500" /> Familias registradas
+      </h2>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        {loading ? (
+          <div className="flex items-center justify-center py-10 text-gray-400">
+            <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando…
+          </div>
+        ) : parents.length === 0 ? (
+          <p className="text-center py-10 text-sm text-gray-400">No hay familias registradas.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-500 border-b border-gray-100">
+                  <th className="text-left py-2 pr-4 font-semibold">Nombre</th>
+                  <th className="text-left py-2 pr-4 font-semibold">Email</th>
+                  <th className="text-left py-2 pr-4 font-semibold hidden sm:table-cell">Teléfono</th>
+                  <th className="text-left py-2 pr-4 font-semibold hidden md:table-cell">Dirección</th>
+                  <th className="text-left py-2 font-semibold hidden md:table-cell">Registrado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {parents.map(p => (
+                  <tr key={p.userId} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 pr-4 font-medium text-gray-800">{p.name}</td>
+                    <td className="py-3 pr-4 text-gray-500 text-xs">{p.user?.email}</td>
+                    <td className="py-3 pr-4 text-gray-600 hidden sm:table-cell">{p.phone}</td>
+                    <td className="py-3 pr-4 text-gray-600 hidden md:table-cell">{p.address}</td>
+                    <td className="py-3 text-gray-400 text-xs hidden md:table-cell">
+                      {new Date(p.user?.createdAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-xs text-gray-400 mt-3">{parents.length} familia{parents.length !== 1 ? 's' : ''}</p>
           </div>
         )}
       </div>

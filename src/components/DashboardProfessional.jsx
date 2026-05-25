@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -91,11 +91,72 @@ export default function DashboardProfessional({ user, professional: init }) {
         </div>
       </div>
 
+      {/* Consultas recibidas */}
+      <ContactRequests />
+
       {/* Mi perfil */}
       <ProfileForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
 
       {/* Tarifa */}
       <RateForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+    </div>
+  )
+}
+
+const CAT_LABELS = { infantil:'Cuidado Infantil', pedagogico:'Apoyo Pedagógico', salud:'Salud Pediátrica', terapeutico:'Cuidado Terapéutico', limpieza:'Limpieza del Hogar' }
+
+function ContactRequests() {
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading]   = useState(true)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/professional/notifications`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
+      .then(r => r.json())
+      .then(data => { setRequests(Array.isArray(data) ? data : []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <h3 className="font-heading font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <Bell className="w-4 h-4 text-teal-500" />
+        Consultas recibidas
+        {requests.length > 0 && (
+          <span className="ml-1 bg-teal-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{requests.length}</span>
+        )}
+      </h3>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-gray-400 text-sm py-4">
+          <RefreshCw className="w-4 h-4 animate-spin" /> Cargando…
+        </div>
+      ) : requests.length === 0 ? (
+        <p className="text-sm text-gray-400 py-4">Todavía no recibiste consultas de familias.</p>
+      ) : (
+        <div className="space-y-3">
+          {requests.map(req => (
+            <div key={req.id} className="border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-gray-800 text-sm">{req.parent.name}</span>
+                  <span className="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full font-medium">
+                    {CAT_LABELS[req.category] ?? req.category}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                  <span className="flex items-center gap-1"><Phone className="w-3 h-3"/>{req.parent.phone}</span>
+                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/>{req.parent.address}</span>
+                </div>
+              </div>
+              <span className="text-xs text-gray-400 flex-shrink-0">
+                {new Date(req.createdAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

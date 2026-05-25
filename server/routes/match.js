@@ -42,8 +42,12 @@ router.post('/notify', auth, async (req, res) => {
 
     if (!professional || !parent) return res.status(404).json({ error: 'Datos no encontrados' })
 
+    await prisma.contactRequest.create({
+      data: { professionalId: professional.userId, parentId: parent.userId, category },
+    })
+
     const label = CATEGORY_LABELS[category] ?? category
-    const { subject, html } = tpl.notify(professional.name, parent.address, label)
+    const { subject, html } = tpl.notify(professional.name, parent.name, parent.phone, parent.address, label)
     await sendEmail({ to: professional.user.email, subject, html })
 
     res.json({ success: true })

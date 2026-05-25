@@ -130,4 +130,17 @@ router.post('/verify/:userId', async (req, res) => {
   }
 })
 
+// GET /api/admin/parents
+router.get('/parents', async (req, res) => {
+  try {
+    const parents = await prisma.parent.findMany({
+      include: { user: { select: { email: true, status: true, createdAt: true } } },
+      orderBy: { user: { createdAt: 'desc' } },
+    })
+    res.json(parents)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export default router

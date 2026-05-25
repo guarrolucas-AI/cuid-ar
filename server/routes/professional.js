@@ -36,4 +36,18 @@ router.patch('/me', auth, async (req, res) => {
   }
 })
 
+// GET /api/professional/notifications
+router.get('/notifications', auth, async (req, res) => {
+  try {
+    const requests = await prisma.contactRequest.findMany({
+      where: { professionalId: req.user.id },
+      include: { parent: { select: { name: true, phone: true, address: true } } },
+      orderBy: { createdAt: 'desc' },
+    })
+    res.json(requests)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export default router

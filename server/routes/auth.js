@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 import { prisma } from '../lib/prisma.js'
 import { sendEmail, tpl } from '../lib/email.js'
 
@@ -66,6 +67,53 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' })
     const profile = user.professional ?? user.parent ?? null
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, status: user.status }, profile })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body
+    const user = await prisma.user.findUnique({ where: { email } })
+    // Siempre responde 200 para no revelar si el email existe
+    if (!user) return res.json({ ok: true })
+
+    const token = crypto.randomBytes(32).toString('hex')
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hora
+
+    await prisma.passwordResetToken.create({ data: { userId: user.id, token, expiresAt } })
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://cuid-ar-nine.vercel.app'
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`
+    const { subject, html } = tpl.resetPassword(resetUrl)
+    await sendEmail({ to: email, subject, html })
+
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body
+    if (!token || !newPassword || newPassword.length < 6)
+      return res.status(400).json({ error: 'Datos inválidos' })
+
+    const record = await prisma.passwordResetToken.findUnique({ where: { token } })
+    if (!record || record.used || record.expiresAt < new Date())
+      return res.status(400).json({ error: 'El enlace es inválido o expiró' })
+
+    const hashed = await bcrypt.hash(newPassword, 10)
+    await Promise.all([
+      prisma.user.update({ where: { id: record.userId }, data: { password: hashed } }),
+      prisma.passwordResetToken.update({ where: { token }, data: { used: true } }),
+    ])
+
+    res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
