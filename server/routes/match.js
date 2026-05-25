@@ -13,6 +13,8 @@ const CATEGORY_LABELS = {
 // GET /api/match/search?zone=CABA&category=infantil&maxRate=8000
 router.get('/search', auth, async (req, res) => {
   try {
+    if (req.user.status !== 'subscribed')
+      return res.status(403).json({ error: 'Se requiere suscripción activa' })
     const { zone, category, maxRate } = req.query
     const professionals = await prisma.professional.findMany({
       where: {
@@ -35,6 +37,8 @@ router.get('/search', auth, async (req, res) => {
 // POST /api/match/notify
 router.post('/notify', auth, async (req, res) => {
   try {
+    if (req.user.status !== 'subscribed')
+      return res.status(403).json({ error: 'Se requiere suscripción activa' })
     const { professionalId, category } = req.body
 
     const [professional, parent] = await Promise.all([

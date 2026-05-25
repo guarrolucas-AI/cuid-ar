@@ -417,6 +417,7 @@ function ProfessionalsSection({ notify }) {
 function ParentsSection() {
   const [parents, setParents]   = useState([])
   const [loading, setLoading]   = useState(true)
+  const [toggling, setToggling] = useState({})
 
   useEffect(() => {
     fetch(`${API_BASE}/api/admin/parents`, { headers: headers() })
@@ -424,6 +425,20 @@ function ParentsSection() {
       .then(data => { setParents(Array.isArray(data) ? data : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
+
+  const handleSubscription = async (p, active) => {
+    setToggling(t => ({ ...t, [p.userId]: true }))
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/subscription/${p.userId}`, {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({ active }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setParents(ps => ps.map(x => x.userId === p.userId
+        ? { ...x, user: { ...x.user, status: active ? 'subscribed' : 'active' } } : x))
+    } catch { /* silent */ }
+    setToggling(t => ({ ...t, [p.userId]: false }))
+  }
 
   return (
     <section>
@@ -446,7 +461,8 @@ function ParentsSection() {
                   <th className="text-left py-2 pr-4 font-semibold">Email</th>
                   <th className="text-left py-2 pr-4 font-semibold hidden sm:table-cell">Teléfono</th>
                   <th className="text-left py-2 pr-4 font-semibold hidden md:table-cell">Dirección</th>
-                  <th className="text-left py-2 font-semibold hidden md:table-cell">Registrado</th>
+                  <th className="text-left py-2 pr-4 font-semibold hidden sm:table-cell">Suscripción</th>
+                  <th className="py-2"/>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -456,8 +472,24 @@ function ParentsSection() {
                     <td className="py-3 pr-4 text-gray-500 text-xs">{p.user?.email}</td>
                     <td className="py-3 pr-4 text-gray-600 hidden sm:table-cell">{p.phone}</td>
                     <td className="py-3 pr-4 text-gray-600 hidden md:table-cell">{p.address}</td>
-                    <td className="py-3 text-gray-400 text-xs hidden md:table-cell">
-                      {new Date(p.user?.createdAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' })}
+                    <td className="py-3 pr-4 hidden sm:table-cell">
+                      {p.user?.status === 'subscribed'
+                        ? <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-1 rounded-full">Activa</span>
+                        : <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full">Inactiva</span>
+                      }
+                    </td>
+                    <td className="py-3">
+                      <button
+                        disabled={toggling[p.userId]}
+                        onClick={() => handleSubscription(p, p.user?.status !== 'subscribed')}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap ${
+                          p.user?.status === 'subscribed'
+                            ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                            : 'bg-sky-500 text-white hover:bg-sky-600'
+                        }`}
+                      >
+                        {toggling[p.userId] ? '…' : p.user?.status === 'subscribed' ? 'Desactivar' : 'Activar'}
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, MapPin, Tag, DollarSign, Bell, CheckCircle, ShieldCheck, Save, User, Phone } from 'lucide-react'
+import { Search, MapPin, Tag, DollarSign, Bell, CheckCircle, ShieldCheck, Save, User, Phone, Lock, CreditCard } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -73,6 +73,8 @@ export default function DashboardParent({ user, profile: init }) {
 
   const selectClass = 'w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400 appearance-none bg-white'
 
+  const subscribed = user.status === 'subscribed'
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {toast && (
@@ -81,6 +83,27 @@ export default function DashboardParent({ user, profile: init }) {
         </div>
       )}
 
+      {/* Header con badge suscripción */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-gray-800">{init?.name ?? user.email}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
+        </div>
+        {subscribed
+          ? <span className="flex items-center gap-1.5 text-xs font-semibold bg-teal-100 text-teal-700 px-3 py-1.5 rounded-full">
+              <CreditCard className="w-3.5 h-3.5"/>Suscripción activa
+            </span>
+          : <span className="flex items-center gap-1.5 text-xs font-semibold bg-red-100 text-red-600 px-3 py-1.5 rounded-full">
+              <Lock className="w-3.5 h-3.5"/>Sin suscripción
+            </span>
+        }
+      </div>
+
+      {/* Pantalla de pago si no tiene suscripción */}
+      {!subscribed && <ParentPaymentWall />}
+
+      {subscribed && (
+        <>
       {/* Perfil */}
       <ProfileForm user={user} init={init} notify={notify} />
 
@@ -159,6 +182,30 @@ export default function DashboardParent({ user, profile: init }) {
           ))}
         </div>
       )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function ParentPaymentWall() {
+  return (
+    <div className="bg-white rounded-2xl p-8 shadow-sm border border-red-100 text-center space-y-4">
+      <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
+        <Lock className="w-7 h-7 text-red-400" />
+      </div>
+      <h3 className="font-heading text-xl font-bold text-gray-800">Activá tu suscripción</h3>
+      <p className="text-sm text-gray-500 max-w-sm mx-auto">
+        Para buscar profesionales y contactarlos necesitás tener una suscripción activa.
+      </p>
+      <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 space-y-1 text-left max-w-xs mx-auto">
+        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Buscar profesionales</p>
+        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Contactar y notificar</p>
+        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Ver perfiles verificados</p>
+      </div>
+      <p className="text-xs text-gray-400 pt-2">
+        Comunicate con el equipo de CUID_AR para activar tu cuenta o aguardá la confirmación de tu pago.
+      </p>
     </div>
   )
 }
