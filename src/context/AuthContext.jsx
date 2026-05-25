@@ -31,12 +31,29 @@ export function AuthProvider({ children }) {
   }
 
   const login = async (email, password) => {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    const data = await res.json()
+    let res
+    try {
+      res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+    } catch (netErr) {
+      console.error('[login] network error:', netErr)
+      throw new Error('Sin conexión con el servidor')
+    }
+
+    const text = await res.text()
+    console.log('[login] status:', res.status, '| body:', text.substring(0, 300))
+
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch (parseErr) {
+      console.error('[login] JSON parse failed. Raw response:', text)
+      throw new Error(`Error del servidor (${res.status}). Intentá de nuevo.`)
+    }
+
     if (!res.ok) throw new Error(data.error || 'Error al iniciar sesión')
     persist(data.token, data.user, data.profile ?? null)
     return data.user
