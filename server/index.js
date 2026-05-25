@@ -32,8 +32,6 @@ app.use(cors({
   credentials: true,
 }))
 
-// El webhook de MP necesita el body raw para validar la firma
-app.use('/api/webhooks/mercadopago', express.raw({ type: 'application/json' }))
 app.use(express.json())
 
 app.use('/api/auth',         authRoutes)

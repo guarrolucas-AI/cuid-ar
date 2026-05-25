@@ -12,8 +12,7 @@ async function getMPToken() {
 // POST /api/webhooks/mercadopago
 router.post('/mercadopago', async (req, res) => {
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const { type, action, data } = body
+    const { type, action, data } = req.body || {}
 
     // MP envía type='subscription_preapproval' para eventos de suscripción
     const isSubscription = type === 'subscription_preapproval' ||
