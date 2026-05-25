@@ -13,10 +13,22 @@ import parentRoutes from './routes/parent.js'
 const app = express()
 const PORT = process.env.PORT || 4000
 
-// CORS: acepta localhost en dev y la URL del frontend en prod
-const allowed = [process.env.FRONTEND_URL, 'http://localhost:5173'].filter(Boolean)
+// CORS: acepta localhost en dev, la URL del frontend en prod, y preview URLs de Vercel
+const allowed = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'https://cuid-ar-nine.vercel.app',
+].filter(Boolean)
+
 app.use(cors({
-  origin: (origin, cb) => (!origin || allowed.includes(origin) ? cb(null, true) : cb(new Error('CORS'))),
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true)
+    // Acepta orígenes explícitos o cualquier preview URL del mismo proyecto en Vercel
+    if (allowed.includes(origin) || /^https:\/\/cuid-ar-[a-z0-9-]+\.vercel\.app$/.test(origin)) {
+      return cb(null, true)
+    }
+    return cb(new Error('CORS'))
+  },
   credentials: true,
 }))
 
