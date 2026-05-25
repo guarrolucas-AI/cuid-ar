@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { prisma } from '../lib/prisma.js'
 import { sendEmail, tpl } from '../lib/email.js'
+import { auth } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -73,7 +74,6 @@ router.post('/login', async (req, res) => {
 })
 
 // GET /api/auth/me — devuelve usuario y perfil actualizados
-import { auth } from '../middleware/auth.js'
 router.get('/me', auth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
