@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Search, MapPin, Tag, DollarSign, Bell, CheckCircle, ShieldCheck, Save, User, Phone, Lock, CreditCard } from 'lucide-react'
+import { Search, MapPin, Tag, DollarSign, Bell, CheckCircle, ShieldCheck, Save, User, Phone, Lock, CreditCard, RefreshCw } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -189,8 +190,10 @@ export default function DashboardParent({ user, profile: init }) {
 }
 
 function ParentPaymentWall() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [error, setError]       = useState('')
+  const { refreshUser }         = useAuth()
 
   const handleSubscribe = async () => {
     setLoading(true); setError('')
@@ -208,6 +211,12 @@ function ParentPaymentWall() {
     }
   }
 
+  const handleCheck = async () => {
+    setChecking(true)
+    await refreshUser()
+    setChecking(false)
+  }
+
   return (
     <div className="bg-white rounded-2xl p-8 shadow-sm border border-red-100 text-center space-y-4">
       <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
@@ -223,14 +232,18 @@ function ParentPaymentWall() {
         <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Ver perfiles verificados</p>
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
-      <button
-        onClick={handleSubscribe}
-        disabled={loading}
-        className="inline-flex items-center gap-2 px-8 py-3 bg-teal-500 text-white font-bold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 text-sm"
-      >
-        <CreditCard className="w-4 h-4"/>
-        {loading ? 'Redirigiendo…' : 'Suscribirme ahora'}
-      </button>
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <button onClick={handleSubscribe} disabled={loading}
+          className="inline-flex items-center gap-2 px-8 py-3 bg-teal-500 text-white font-bold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 text-sm">
+          <CreditCard className="w-4 h-4"/>
+          {loading ? 'Redirigiendo…' : 'Suscribirme ahora'}
+        </button>
+        <button onClick={handleCheck} disabled={checking}
+          className="inline-flex items-center gap-2 px-5 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60 text-sm">
+          <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`}/>
+          {checking ? 'Verificando…' : 'Ya pagué → Verificar'}
+        </button>
+      </div>
     </div>
   )
 }
