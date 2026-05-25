@@ -30,8 +30,8 @@ router.post('/subscribe', auth, async (req, res) => {
 
     const subscription = await preApproval.create({
       body: {
-        reason: config.mp_reason || 'CUID_AR — Acceso Profesional Mensual',
-        payer_email: req.user.email,
+        reason: config.mp_reason || 'CUID_AR — Acceso Mensual',
+        external_reference: req.user.id,
         auto_recurring: {
           frequency: 1,
           frequency_type: 'months',

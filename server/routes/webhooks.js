@@ -28,21 +28,26 @@ router.post('/mercadopago', async (req, res) => {
 
     console.log('[WEBHOOK MP] status:', subscription.status, 'email:', subscription.payer_email)
 
-    if (subscription.status === 'authorized') {
-      const user = await prisma.user.findFirst({ where: { email: subscription.payer_email } })
-      if (user) {
-        await prisma.user.update({ where: { id: user.id }, data: { status: 'subscribed' } })
-        console.log('[WEBHOOK MP] Usuario suscripto:', user.email)
-      }
+    // Buscar usuario por external_reference (ID) o por email como fallback
+    const userId = subscription.external_reference
+    const findUser = userId
+      ? prisma.user.findUnique({ where: { id: userId } })
+      : prisma.user.findFirst({ where: { email: subscription.payer_email } })
+    const user = await findUser
+
+    if (!user) {
+      console.log('[WEBHOOK MP] Usuario no encontrado. external_reference:', userId)
+      return res.sendStatus(200)
     }
 
-    // Si se cancela o pausa, desactivar
+    if (subscription.status === 'authorized') {
+      await prisma.user.update({ where: { id: user.id }, data: { status: 'subscribed' } })
+      console.log('[WEBHOOK MP] Usuario suscripto:', user.email)
+    }
+
     if (['cancelled', 'paused'].includes(subscription.status)) {
-      const user = await prisma.user.findFirst({ where: { email: subscription.payer_email } })
-      if (user) {
-        await prisma.user.update({ where: { id: user.id }, data: { status: 'active' } })
-        console.log('[WEBHOOK MP] Suscripción desactivada:', user.email)
-      }
+      await prisma.user.update({ where: { id: user.id }, data: { status: 'active' } })
+      console.log('[WEBHOOK MP] Suscripción desactivada:', user.email)
     }
 
     res.sendStatus(200)
