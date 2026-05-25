@@ -53,7 +53,7 @@ router.post('/mercadopago', async (req, res) => {
     res.sendStatus(200)
   } catch (err) {
     console.error('[WEBHOOK MP]', err.message)
-    res.sendStatus(500)
+    res.sendStatus(200) // Siempre 200 para que MP no reintente
   }
 })
 
