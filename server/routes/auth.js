@@ -101,7 +101,7 @@ router.post('/forgot-password', async (req, res) => {
 
     await prisma.passwordResetToken.create({ data: { userId: user.id, token, expiresAt } })
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://cuid-ar-nine.vercel.app'
+    const frontendUrl = 'https://cuid-ar-nine.vercel.app'
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`
     const { subject, html } = tpl.resetPassword(resetUrl)
     await sendEmail({ to: email, subject, html })

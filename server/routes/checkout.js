@@ -38,7 +38,7 @@ router.post('/subscribe', auth, async (req, res) => {
           transaction_amount: parseFloat(config.mp_price_ars || '5000'),
           currency_id: 'ARS',
         },
-        back_url: `${process.env.FRONTEND_URL || 'https://cuid-ar-nine.vercel.app'}/dashboard?payment=1`,
+        back_url: 'https://cuid-ar-nine.vercel.app/dashboard?payment=1',
         status: 'pending',
       },
     })
