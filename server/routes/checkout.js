@@ -50,4 +50,32 @@ router.post('/subscribe', auth, async (req, res) => {
   }
 })
 
+// GET /api/checkout/verify — consulta MP y activa la suscripción si está authorized
+router.get('/verify', auth, async (req, res) => {
+  try {
+    const config = await getMPConfig()
+    if (!config.mp_access_token) return res.json({ status: req.user.status })
+
+    const mp = new MercadoPagoConfig({ accessToken: config.mp_access_token })
+    const preApproval = new PreApproval(mp)
+
+    // Buscar suscripciones vinculadas a este usuario por external_reference
+    const search = await preApproval.search({
+      options: { external_reference: req.user.id, limit: 5 },
+    })
+
+    const authorized = search?.results?.some(s => s.status === 'authorized')
+
+    if (authorized && req.user.status !== 'subscribed') {
+      await prisma.user.update({ where: { id: req.user.id }, data: { status: 'subscribed' } })
+      return res.json({ status: 'subscribed', updated: true })
+    }
+
+    res.json({ status: req.user.status, updated: false })
+  } catch (err) {
+    console.error('[VERIFY]', err.message)
+    res.json({ status: req.user.status, error: err.message })
+  }
+})
+
 export default router

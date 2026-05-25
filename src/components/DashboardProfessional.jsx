@@ -148,7 +148,14 @@ function PaymentWall() {
 
   const handleCheck = async () => {
     setChecking(true)
-    await refreshUser()
+    try {
+      const res = await fetch(`${API_BASE}/api/checkout/verify`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+      const data = await res.json()
+      if (data.status === 'subscribed') await refreshUser()
+      else setError('Tu pago aún no fue confirmado por Mercado Pago. Esperá unos minutos e intentá de nuevo.')
+    } catch { setError('Error al verificar. Intentá de nuevo.') }
     setChecking(false)
   }
 
