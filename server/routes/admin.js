@@ -130,6 +130,20 @@ router.post('/verify/:userId', async (req, res) => {
   }
 })
 
+// POST /api/admin/subscription/:userId — activa o desactiva suscripción manualmente
+router.post('/subscription/:userId', async (req, res) => {
+  try {
+    const { active } = req.body
+    const updated = await prisma.user.update({
+      where: { id: req.params.userId },
+      data: { status: active ? 'subscribed' : 'active' },
+    })
+    res.json({ userId: updated.id, status: updated.status })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/admin/parents
 router.get('/parents', async (req, res) => {
   try {

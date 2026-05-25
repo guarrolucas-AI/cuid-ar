@@ -17,6 +17,8 @@ router.get('/search', auth, async (req, res) => {
     const professionals = await prisma.professional.findMany({
       where: {
         available: true,
+        verified: true,
+        user: { status: 'subscribed' },
         ...(zone     && { zone }),
         ...(category && { category }),
         ...(maxRate  && { hourlyRate: { lte: parseFloat(maxRate) } }),
@@ -41,6 +43,8 @@ router.post('/notify', auth, async (req, res) => {
     ])
 
     if (!professional || !parent) return res.status(404).json({ error: 'Datos no encontrados' })
+    if (!professional.verified || professional.user.status !== 'subscribed')
+      return res.status(403).json({ error: 'Profesional no disponible' })
 
     await prisma.contactRequest.create({
       data: { professionalId: professional.userId, parentId: parent.userId, category },

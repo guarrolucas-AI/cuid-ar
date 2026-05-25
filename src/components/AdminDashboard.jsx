@@ -250,7 +250,8 @@ function ProfessionalsSection({ notify }) {
   const [pros, setPros]       = useState([])
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ category:'', zone:'', verified:'' })
-  const [verifying, setVerifying] = useState({})
+  const [verifying, setVerifying]       = useState({})
+  const [togglingSubscription, setTogglingSubscription] = useState({})
 
   const load = async (f = filters) => {
     setLoading(true)
@@ -270,17 +271,29 @@ function ProfessionalsSection({ notify }) {
     setVerifying(v => ({ ...v, [pro.userId]: true }))
     try {
       const res = await fetch(`${API_BASE}/api/admin/verify/${pro.userId}`, {
-        method: 'POST',
-        headers: headers(),
+        method: 'POST', headers: headers(),
         body: JSON.stringify({ verified }),
       })
       if (!res.ok) throw new Error((await res.json()).error)
       setPros(ps => ps.map(p => p.userId === pro.userId ? { ...p, verified } : p))
       notify('ok', verified ? `${pro.name} verificado/a` : `${pro.name} desverificado/a`)
-    } catch (err) {
-      notify('err', err.message)
-    }
+    } catch (err) { notify('err', err.message) }
     setVerifying(v => ({ ...v, [pro.userId]: false }))
+  }
+
+  const handleSubscription = async (pro, active) => {
+    setTogglingSubscription(v => ({ ...v, [pro.userId]: true }))
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/subscription/${pro.userId}`, {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({ active }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setPros(ps => ps.map(p => p.userId === pro.userId
+        ? { ...p, user: { ...p.user, status: active ? 'subscribed' : 'active' } } : p))
+      notify('ok', active ? `Suscripción activada para ${pro.name}` : `Suscripción desactivada para ${pro.name}`)
+    } catch (err) { notify('err', err.message) }
+    setTogglingSubscription(v => ({ ...v, [pro.userId]: false }))
   }
 
   const selectClass = 'pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400 appearance-none bg-white'
@@ -341,7 +354,8 @@ function ProfessionalsSection({ notify }) {
                   <th className="text-left py-2 pr-4 font-semibold hidden sm:table-cell">Especialidad</th>
                   <th className="text-left py-2 pr-4 font-semibold hidden md:table-cell">Zona</th>
                   <th className="text-left py-2 pr-4 font-semibold hidden md:table-cell">Tarifa/hr</th>
-                  <th className="text-left py-2 font-semibold">Estado</th>
+                  <th className="text-left py-2 pr-4 font-semibold">Verificación</th>
+                  <th className="text-left py-2 pr-4 font-semibold hidden sm:table-cell">Suscripción</th>
                   <th className="py-2"/>
                 </tr>
               </thead>
@@ -359,18 +373,33 @@ function ProfessionalsSection({ notify }) {
                         : <span className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-full w-fit"><ShieldX className="w-3 h-3"/>Pendiente</span>
                       }
                     </td>
+                    <td className="py-3 pr-4 hidden sm:table-cell">
+                      {pro.user?.status === 'subscribed'
+                        ? <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-1 rounded-full">Activa</span>
+                        : <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full">Inactiva</span>
+                      }
+                    </td>
                     <td className="py-3">
-                      <button
-                        disabled={verifying[pro.userId]}
-                        onClick={() => handleVerify(pro, !pro.verified)}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap ${
-                          pro.verified
-                            ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                            : 'bg-teal-500 text-white hover:bg-teal-600'
-                        }`}
-                      >
-                        {verifying[pro.userId] ? '…' : pro.verified ? 'Quitar verificación' : 'Verificar'}
-                      </button>
+                      <div className="flex flex-col gap-1.5">
+                        <button
+                          disabled={verifying[pro.userId]}
+                          onClick={() => handleVerify(pro, !pro.verified)}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap ${
+                            pro.verified ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-teal-500 text-white hover:bg-teal-600'
+                          }`}
+                        >
+                          {verifying[pro.userId] ? '…' : pro.verified ? 'Quitar verificación' : 'Verificar'}
+                        </button>
+                        <button
+                          disabled={togglingSubscription[pro.userId]}
+                          onClick={() => handleSubscription(pro, pro.user?.status !== 'subscribed')}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap ${
+                            pro.user?.status === 'subscribed' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-sky-500 text-white hover:bg-sky-600'
+                          }`}
+                        >
+                          {togglingSubscription[pro.userId] ? '…' : pro.user?.status === 'subscribed' ? 'Desactivar suscripción' : 'Activar suscripción'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

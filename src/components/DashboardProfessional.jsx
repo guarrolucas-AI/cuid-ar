@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw } from 'lucide-react'
+import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -36,6 +36,8 @@ export default function DashboardProfessional({ user, professional: init }) {
     return res.json()
   }
 
+  const subscribed = user.status === 'subscribed'
+
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-5">
       {toast && (
@@ -49,9 +51,19 @@ export default function DashboardProfessional({ user, professional: init }) {
         <div>
           <h2 className="font-heading text-2xl font-bold text-gray-800">{pro.name}</h2>
           <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
-          <span className="mt-2 inline-block text-xs font-semibold bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
-            {CATEGORIES.find(c => c.value === pro.category)?.label ?? pro.category}
-          </span>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <span className="text-xs font-semibold bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
+              {CATEGORIES.find(c => c.value === pro.category)?.label ?? pro.category}
+            </span>
+            {subscribed
+              ? <span className="text-xs font-semibold bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center gap-1">
+                  <CreditCard className="w-3 h-3"/>Suscripción activa
+                </span>
+              : <span className="text-xs font-semibold bg-red-100 text-red-600 px-3 py-1 rounded-full flex items-center gap-1">
+                  <Lock className="w-3 h-3"/>Sin suscripción
+                </span>
+            }
+          </div>
         </div>
         {pro.verified
           ? <div className="flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full border border-teal-200 flex-shrink-0">
@@ -63,42 +75,74 @@ export default function DashboardProfessional({ user, professional: init }) {
         }
       </div>
 
-      {/* Disponibilidad */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="font-heading font-bold text-gray-800 mb-4">Disponibilidad</h3>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-gray-700">
-              {pro.available ? 'Disponible para nuevas consultas' : 'No disponible en este momento'}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {pro.available ? 'Aparecés en los resultados de búsqueda' : 'No aparecés en ninguna búsqueda'}
-            </p>
+      {/* Pantalla de pago si no tiene suscripción */}
+      {!subscribed && <PaymentWall />}
+
+      {/* Contenido solo para suscriptos */}
+      {subscribed && (
+        <>
+          {/* Disponibilidad */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h3 className="font-heading font-bold text-gray-800 mb-4">Disponibilidad</h3>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  {pro.available ? 'Disponible para nuevas consultas' : 'No disponible en este momento'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {pro.available ? 'Aparecés en los resultados de búsqueda' : 'No aparecés en ninguna búsqueda'}
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    const u = await patch({ available: !pro.available })
+                    setPro(p => ({ ...p, available: u.available }))
+                  } catch (e) { notify(e.message, false) }
+                }}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold text-sm transition-all flex-shrink-0 ${
+                  pro.available ? 'bg-teal-500 text-white hover:bg-teal-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                }`}
+              >
+                {pro.available ? <><ToggleRight className="w-5 h-5"/>Activo</> : <><ToggleLeft className="w-5 h-5"/>Inactivo</>}
+              </button>
+            </div>
           </div>
-          <button
-            onClick={async () => {
-              try {
-                const u = await patch({ available: !pro.available })
-                setPro(p => ({ ...p, available: u.available }))
-              } catch (e) { notify(e.message, false) }
-            }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold text-sm transition-all flex-shrink-0 ${
-              pro.available ? 'bg-teal-500 text-white hover:bg-teal-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-            }`}
-          >
-            {pro.available ? <><ToggleRight className="w-5 h-5"/>Activo</> : <><ToggleLeft className="w-5 h-5"/>Inactivo</>}
-          </button>
-        </div>
+
+          {/* Consultas recibidas */}
+          <ContactRequests />
+
+          {/* Mi perfil */}
+          <ProfileForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+
+          {/* Tarifa */}
+          <RateForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+        </>
+      )}
+    </div>
+  )
+}
+
+function PaymentWall() {
+  return (
+    <div className="bg-white rounded-2xl p-8 shadow-sm border border-red-100 text-center space-y-4">
+      <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
+        <Lock className="w-7 h-7 text-red-400" />
       </div>
-
-      {/* Consultas recibidas */}
-      <ContactRequests />
-
-      {/* Mi perfil */}
-      <ProfileForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
-
-      {/* Tarifa */}
-      <RateForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+      <h3 className="font-heading text-xl font-bold text-gray-800">Activá tu suscripción</h3>
+      <p className="text-sm text-gray-500 max-w-sm mx-auto">
+        Para recibir consultas de familias, aparecer en los resultados de búsqueda y acceder a todas las funciones, necesitás tener una suscripción activa.
+      </p>
+      <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 space-y-1 text-left max-w-xs mx-auto">
+        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Aparecés en búsquedas</p>
+        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Recibís consultas de familias</p>
+        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Editás tu perfil y tarifa</p>
+      </div>
+      <div className="pt-2">
+        <p className="text-xs text-gray-400">
+          Comunicate con el equipo de CUID_AR para activar tu cuenta o aguardá la confirmación de tu pago.
+        </p>
+      </div>
     </div>
   )
 }
