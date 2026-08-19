@@ -14,7 +14,10 @@ const DEFAULT_CONFIG = [
   { key: 'mp_reason',       value: 'CUID_AR — Acceso Profesional Mensual', label: 'Descripción del cobro en MP', sensitive: false },
   { key: 'resend_api_key',  value: '',       label: 'Resend API Key (emails)',           sensitive: true  },
   { key: 'resend_from',     value: '',       label: 'Email remitente (ej: hola@tudominio.com)', sensitive: false },
+  { key: 'rate_tolerance_ars', value: '5000', label: 'Tolerancia sobre la tarifa oficial ($, ±)', sensitive: false },
 ]
+
+const RATE_CATEGORIES = ['infantil', 'pedagogico', 'salud', 'terapeutico', 'limpieza']
 
 // GET /api/admin/config — devuelve config, enmascara campos sensibles
 router.get('/config', async (req, res) => {
@@ -57,6 +60,43 @@ router.patch('/config', async (req, res) => {
     )
 
     res.json({ updated: results.length })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/admin/rates — tarifas de referencia oficiales por categoría
+router.get('/rates', async (req, res) => {
+  try {
+    for (const category of RATE_CATEGORIES) {
+      await prisma.serviceRate.upsert({
+        where: { category },
+        update: {},
+        create: { category, officialRate: null },
+      })
+    }
+    const rates = await prisma.serviceRate.findMany({ orderBy: { category: 'asc' } })
+    res.json(rates)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /api/admin/rates — actualiza una o varias tarifas oficiales a la vez
+// body: { infantil: 6000, limpieza: 5300, ... }
+router.patch('/rates', async (req, res) => {
+  try {
+    const updates = Object.entries(req.body).filter(([category]) => RATE_CATEGORIES.includes(category))
+    const results = await Promise.all(
+      updates.map(([category, officialRate]) =>
+        prisma.serviceRate.upsert({
+          where: { category },
+          update: { officialRate: officialRate === '' || officialRate == null ? null : parseFloat(officialRate) },
+          create: { category, officialRate: officialRate === '' || officialRate == null ? null : parseFloat(officialRate) },
+        })
+      )
+    )
+    res.json(results)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

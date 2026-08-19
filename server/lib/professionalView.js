@@ -4,12 +4,12 @@
 // - Visitante / no abonado: foto, nombre, servicios, costo estimado y
 //   verificado. Nada de contacto directo.
 // - Abonado y verificado (status === 'subscribed'): además, certificaciones
-//   declaradas. Disponibilidad horaria y tarifa oficial de referencia se
-//   suman cuando esos módulos existan (geolocalización / aranceles).
+//   declaradas y la tarifa oficial de referencia junto a la pretendida
+//   (disponibilidad horaria detallada queda para cuando exista ese campo).
 // - Teléfono, mail, DNI y dirección exacta NUNCA se devuelven acá bajo
 //   ninguna circunstancia — eso solo se intercambia dentro del chat privado
 //   post-match, por decisión de las partes, no expuesto por la API.
-export function toProfessionalView(pro, viewerSubscribed) {
+export function toProfessionalView(pro, viewerSubscribed, officialRate = null) {
   const base = {
     userId: pro.userId,
     name: pro.name,
@@ -26,5 +26,6 @@ export function toProfessionalView(pro, viewerSubscribed) {
   return {
     ...base,
     certifications: pro.certifications ?? [],
+    officialRate,
   }
 }

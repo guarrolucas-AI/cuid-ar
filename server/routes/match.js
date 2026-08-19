@@ -14,6 +14,28 @@ const CATEGORY_LABELS = {
 
 const DEFAULT_RESULT_LIMIT = 30
 
+async function getOfficialRates() {
+  const rows = await prisma.serviceRate.findMany()
+  return Object.fromEntries(rows.map((r) => [r.category, r.officialRate]))
+}
+
+async function getRateTolerance() {
+  const config = await prisma.appConfig.findUnique({ where: { key: 'rate_tolerance_ars' } })
+  return config ? parseFloat(config.value) : 5000
+}
+
+// GET /api/match/rates — tarifas de referencia oficiales por categoría y la
+// tolerancia vigente. Público: sirve tanto para mostrarlo a un visitante
+// como para la calculadora de multiservicio.
+router.get('/rates', async (req, res) => {
+  try {
+    const [rates, toleranceArs] = await Promise.all([getOfficialRates(), getRateTolerance()])
+    res.json({ rates, toleranceArs })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/match/search?zone=CABA&category=infantil&maxRate=8000&lat=-34.6&lng=-58.4
 //
 // Público: cualquier visitante ve el listado (nombre, foto, zona, categoría,
@@ -44,6 +66,7 @@ router.get('/search', optionalAuth, async (req, res) => {
 
     const viewerSubscribed = req.user?.status === 'subscribed'
     const hasCoords = lat != null && lng != null && !Number.isNaN(parseFloat(lat)) && !Number.isNaN(parseFloat(lng))
+    const officialRates = viewerSubscribed ? await getOfficialRates() : {}
 
     if (!hasCoords) {
       // Fallback sin geolocalización: mismo comportamiento de antes.
@@ -59,7 +82,7 @@ router.get('/search', optionalAuth, async (req, res) => {
         orderBy: { hourlyRate: 'asc' },
         take: DEFAULT_RESULT_LIMIT,
       })
-      return res.json(professionals.map((pro) => toProfessionalView(pro, viewerSubscribed)))
+      return res.json(professionals.map((pro) => toProfessionalView(pro, viewerSubscribed, officialRates[pro.category] ?? null)))
     }
 
     const latNum = parseFloat(lat)
@@ -97,7 +120,7 @@ router.get('/search', optionalAuth, async (req, res) => {
       return true
     }).slice(0, DEFAULT_RESULT_LIMIT)
 
-    res.json(inRange.map((pro) => toProfessionalView(pro, viewerSubscribed)))
+    res.json(inRange.map((pro) => toProfessionalView(pro, viewerSubscribed, officialRates[pro.category] ?? null)))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

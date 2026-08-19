@@ -78,3 +78,13 @@ model AppConfig {
   sensitive Boolean  @default(false)
   updatedAt DateTime @updatedAt
 }
+
+// Tarifa de referencia oficial por categoría, cargada y mantenida por el
+// admin (nomencladores AFIP/CNTP/Salud) — ver "Módulo de Gestión de
+// Aranceles". officialRate nullable a propósito: sin configurar todavía
+// se muestra como tal en vez de un $0 engañoso.
+model ServiceRate {
+  category     String   @id
+  officialRate Float?
+  updatedAt    DateTime @updatedAt
+}

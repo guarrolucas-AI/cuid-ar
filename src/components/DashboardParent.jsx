@@ -170,6 +170,11 @@ export default function DashboardParent({ user, profile: init }) {
                     <DollarSign className="w-3.5 h-3.5"/>${Number(pro.hourlyRate).toLocaleString('es-AR')}/hr
                   </span>
                 </div>
+                {pro.officialRate != null && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Valor oficial de referencia: ${Number(pro.officialRate).toLocaleString('es-AR')}/hr
+                  </p>
+                )}
               </div>
               <button onClick={() => handleNotify(pro)} disabled={notified[pro.userId]}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all flex-shrink-0 ${

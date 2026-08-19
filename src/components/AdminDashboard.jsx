@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Settings, Users, ShieldCheck, ShieldX, ToggleLeft, ToggleRight,
   Save, Eye, EyeOff, RefreshCw, CheckCircle, AlertCircle, Lock,
-  MapPin, Tag, Phone, Filter,
+  MapPin, Tag, Phone, Filter, DollarSign, Clock,
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -230,6 +230,9 @@ export default function AdminDashboard() {
         </form>
       </section>
 
+      {/* Aranceles oficiales de referencia */}
+      <RatesSection notify={notify} />
+
       {/* Lista de profesionales */}
       <ProfessionalsSection notify={notify} />
 
@@ -409,6 +412,100 @@ function ProfessionalsSection({ notify }) {
           </div>
         )}
       </div>
+    </section>
+  )
+}
+
+// ── Sección aranceles oficiales de referencia ─────────────────────────────
+// "Módulo de Gestión de Aranceles" — tabla editable para que el admin
+// actualice mensualmente la tarifa base por hora de cada categoría, sin
+// tocar código. El recálculo en la vista pública es automático: /search ya
+// consulta esta misma tabla en cada request.
+function RatesSection({ notify }) {
+  const [rates, setRates]     = useState([])
+  const [draft, setDraft]     = useState({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving]   = useState(false)
+
+  const load = () => {
+    fetch(`${API_BASE}/api/admin/rates`, { headers: headers() })
+      .then((r) => r.json())
+      .then((data) => {
+        setRates(Array.isArray(data) ? data : [])
+        const initial = {}
+        ;(Array.isArray(data) ? data : []).forEach((r) => { initial[r.category] = r.officialRate ?? '' })
+        setDraft(initial)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/rates`, {
+        method: 'PATCH', headers: headers(), body: JSON.stringify(draft),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      notify('ok', 'Aranceles actualizados correctamente')
+      load()
+    } catch (err) {
+      notify('err', err.message)
+    }
+    setSaving(false)
+  }
+
+  return (
+    <section>
+      <h2 className="font-heading font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <DollarSign className="w-5 h-5 text-teal-500" /> Aranceles de Referencia
+      </h2>
+      <form onSubmit={handleSave} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <p className="text-xs text-gray-400 -mt-1 mb-2">
+          Valor oficial por hora, por categoría (nomencladores AFIP/CNTP/Salud). Se muestra a los usuarios abonados
+          junto a la tarifa que pretende cada profesional. La tolerancia (±$) se configura en la sección de arriba,
+          campo &ldquo;Tolerancia sobre la tarifa oficial&rdquo;.
+        </p>
+        {loading ? (
+          <div className="flex items-center justify-center py-8 text-gray-400">
+            <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando…
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {rates.map((r) => (
+              <div key={r.category} className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                <label className="text-sm font-semibold text-gray-700 w-40 flex-shrink-0">
+                  {CATEGORY_LABELS[r.category] ?? r.category}
+                </label>
+                <div className="relative flex-1 min-w-[10rem]">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="number" min="0" step="100"
+                    value={draft[r.category] ?? ''}
+                    onChange={(e) => setDraft((d) => ({ ...d, [r.category]: e.target.value }))}
+                    placeholder="Sin configurar"
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  />
+                </div>
+                <span className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
+                  <Clock className="w-3 h-3" />
+                  {r.updatedAt ? `Actualizado ${new Date(r.updatedAt).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' })}` : 'Sin actualizar'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="pt-2">
+          <button type="submit" disabled={saving || loading}
+            className="flex items-center gap-2 px-6 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60">
+            <Save className="w-4 h-4" />
+            {saving ? 'Guardando…' : 'Guardar aranceles'}
+          </button>
+        </div>
+      </form>
     </section>
   )
 }
