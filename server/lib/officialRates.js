@@ -1,4 +1,10 @@
-import { PDFParse } from 'pdf-parse'
+// IMPORTANTE: usar pdf-parse@1.x, no 2.x. La v2 trae pdfjs-dist con soporte
+// de renderizado (canvas), que depende de @napi-rs/canvas — un binario
+// nativo que no existe en el runtime serverless de Vercel y tira
+// `ReferenceError: DOMMatrix is not defined` en el cold start, tumbando
+// TODA la función (todas las rutas, no solo esta). La v1 es CJS puro,
+// solo extracción de texto, sin esa dependencia.
+import pdf from 'pdf-parse'
 
 function pdfUrlFor(year, month) {
   const yy = String(year).slice(-2)
@@ -16,27 +22,22 @@ async function fetchAndParse(url) {
   if (!res.ok) return null
 
   const buf = Buffer.from(await res.arrayBuffer())
-  const parser = new PDFParse({ data: buf })
-  try {
-    const { text } = await parser.getText()
+  const { text } = await pdf(buf)
 
-    // Tabla de "Escala de salarios <mes> <año>" con columnas Con retiro /
-    // Sin retiro. Usamos "Con retiro" (jornada, no cama adentro) por hora,
-    // que es lo comparable con el modelo de tarifa por hora de CUID_AR.
-    const vigenciaMatch  = text.match(/Escala de salarios\s+(\w+)\s+(\d{4})/i)
-    const cuidadoMatch   = text.match(/Cuidado de personas\s*\$\s*([\d.,]+)/)
-    const generalesMatch = text.match(/Personal para\s*tareas\s*generales\s*\$\s*([\d.,]+)/)
+  // Tabla de "Escala de salarios <mes> <año>" con columnas Con retiro /
+  // Sin retiro. Usamos "Con retiro" (jornada, no cama adentro) por hora,
+  // que es lo comparable con el modelo de tarifa por hora de CUID_AR.
+  const vigenciaMatch  = text.match(/Escala de salarios\s+(\w+)\s+(\d{4})/i)
+  const cuidadoMatch   = text.match(/Cuidado de personas\s*\$\s*([\d.,]+)/)
+  const generalesMatch = text.match(/Personal para\s*tareas\s*generales\s*\$\s*([\d.,]+)/)
 
-    if (!cuidadoMatch || !generalesMatch) return null
+  if (!cuidadoMatch || !generalesMatch) return null
 
-    return {
-      vigencia: vigenciaMatch ? `${vigenciaMatch[1]} ${vigenciaMatch[2]}` : null,
-      infantil: parseArsNumber(cuidadoMatch[1]),
-      limpieza: parseArsNumber(generalesMatch[1]),
-      sourceUrl: url,
-    }
-  } finally {
-    await parser.destroy()
+  return {
+    vigencia: vigenciaMatch ? `${vigenciaMatch[1]} ${vigenciaMatch[2]}` : null,
+    infantil: parseArsNumber(cuidadoMatch[1]),
+    limpieza: parseArsNumber(generalesMatch[1]),
+    sourceUrl: url,
   }
 }
 
