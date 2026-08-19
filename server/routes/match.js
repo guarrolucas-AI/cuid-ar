@@ -14,8 +14,12 @@ const CATEGORY_LABELS = {
 
 const DEFAULT_RESULT_LIMIT = 30
 
+async function getOfficialRateRows() {
+  return prisma.serviceRate.findMany()
+}
+
 async function getOfficialRates() {
-  const rows = await prisma.serviceRate.findMany()
+  const rows = await getOfficialRateRows()
   return Object.fromEntries(rows.map((r) => [r.category, r.officialRate]))
 }
 
@@ -36,11 +40,20 @@ function pickOfficialRate(pro, searchedCategory, officialRates) {
 
 // GET /api/match/rates — tarifas de referencia oficiales por categoría y la
 // tolerancia vigente. Público: sirve tanto para mostrarlo a un visitante
-// como para la calculadora de multiservicio.
+// como para la calculadora de multiservicio y la tabla de aranceles de la
+// home. `rates` es el mapa plano {categoria: $/hora} que ya consume la
+// calculadora; `details` trae además el valor mensual y la fuente cuando
+// existen (hoy solo infantil/limpieza, vía el fetcher de ARCA).
 router.get('/rates', async (req, res) => {
   try {
-    const [rates, toleranceArs] = await Promise.all([getOfficialRates(), getRateTolerance()])
-    res.json({ rates, toleranceArs })
+    const [rows, toleranceArs] = await Promise.all([getOfficialRateRows(), getRateTolerance()])
+    const rates = Object.fromEntries(rows.map((r) => [r.category, r.officialRate]))
+    const details = Object.fromEntries(rows.map((r) => [r.category, {
+      officialRate: r.officialRate,
+      officialRateMonthly: r.officialRateMonthly,
+      source: r.source,
+    }]))
+    res.json({ rates, details, toleranceArs })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

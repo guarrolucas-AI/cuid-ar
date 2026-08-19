@@ -131,13 +131,13 @@ router.post('/rates/fetch-official', async (req, res) => {
     const [infantil, limpieza] = await Promise.all([
       prisma.serviceRate.upsert({
         where: { category: 'infantil' },
-        update: { officialRate: data.infantil, source },
-        create: { category: 'infantil', officialRate: data.infantil, source },
+        update: { officialRate: data.infantil, officialRateMonthly: data.infantilMensual, source },
+        create: { category: 'infantil', officialRate: data.infantil, officialRateMonthly: data.infantilMensual, source },
       }),
       prisma.serviceRate.upsert({
         where: { category: 'limpieza' },
-        update: { officialRate: data.limpieza, source },
-        create: { category: 'limpieza', officialRate: data.limpieza, source },
+        update: { officialRate: data.limpieza, officialRateMonthly: data.limpiezaMensual, source },
+        create: { category: 'limpieza', officialRate: data.limpieza, officialRateMonthly: data.limpiezaMensual, source },
       }),
     ])
     await logAudit(req, 'rates.fetch-official', { detail: `${source} — infantil=${data.infantil}, limpieza=${data.limpieza}` })

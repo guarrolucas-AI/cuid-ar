@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Search, MapPin, Tag, DollarSign, ShieldCheck, Lock, Navigation, Heart, ArrowLeft, Calculator, Info } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -20,9 +20,13 @@ const ZONE_LABELS = { CABA: 'CABA', GBA_Norte: 'GBA Norte', GBA_Sur: 'GBA Sur', 
 // especificación de niveles de acceso. Si comparte su ubicación ve
 // distancia real; si no, ve el listado igual (sin distancia, ordenado por
 // tarifa) — el backend degrada solo, no hace falta duplicar esa lógica acá.
+const VALID_CATEGORIES = CATEGORIES.filter((c) => c.value).map((c) => c.value)
+
 export default function SearchPage() {
   const { user } = useAuth()
-  const [category, setCategory] = useState('')
+  const [searchParams] = useSearchParams()
+  const initialCategory = VALID_CATEGORIES.includes(searchParams.get('category')) ? searchParams.get('category') : ''
+  const [category, setCategory] = useState(initialCategory)
   const [coords, setCoords] = useState(null)
   const [geoStatus, setGeoStatus] = useState('idle') // idle | asking | granted | denied | unsupported
   const [results, setResults] = useState([])

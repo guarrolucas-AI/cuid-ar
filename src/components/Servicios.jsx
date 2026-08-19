@@ -1,7 +1,9 @@
+import { Link } from 'react-router-dom'
 import { Baby, GraduationCap, Stethoscope, Users, Sparkles } from 'lucide-react'
 
 const services = [
   {
+    category: 'infantil',
     icon: Baby,
     title: 'Cuidado Infantil',
     subtitle: 'Niñeras Profesionales',
@@ -14,6 +16,7 @@ const services = [
     badgeBg: 'bg-teal-100 text-teal-700',
   },
   {
+    category: 'pedagogico',
     icon: GraduationCap,
     title: 'Apoyo Pedagógico',
     subtitle: 'Maestras de Apoyo',
@@ -26,6 +29,7 @@ const services = [
     badgeBg: 'bg-amber-100 text-amber-700',
   },
   {
+    category: 'salud',
     icon: Stethoscope,
     title: 'Salud Pediátrica',
     subtitle: 'Enfermeras Pediátricas',
@@ -38,6 +42,7 @@ const services = [
     badgeBg: 'bg-blue-100 text-blue-700',
   },
   {
+    category: 'terapeutico',
     icon: Users,
     title: 'Cuidado Terapéutico',
     subtitle: 'Acompañantes Terapéuticos (AT)',
@@ -50,6 +55,7 @@ const services = [
     badgeBg: 'bg-emerald-100 text-emerald-700',
   },
   {
+    category: 'limpieza',
     icon: Sparkles,
     title: 'Limpieza del Hogar',
     subtitle: 'Personal Doméstico',
@@ -95,9 +101,9 @@ export default function Servicios() {
                 <h3 className="font-heading font-bold text-xl text-gray-800 mb-1">{s.title}</h3>
                 <p className={`text-sm font-semibold ${s.text} mb-3`}>{s.subtitle}</p>
                 <p className="text-sm text-gray-600 leading-relaxed">{s.desc}</p>
-                <button className={`mt-5 text-sm font-semibold ${s.text} hover:underline flex items-center gap-1`}>
+                <Link to={`/buscar?category=${s.category}`} className={`mt-5 text-sm font-semibold ${s.text} hover:underline flex items-center gap-1`}>
                   Ver profesionales →
-                </button>
+                </Link>
               </div>
             )
           })}

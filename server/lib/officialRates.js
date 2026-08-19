@@ -12,9 +12,27 @@ function pdfUrlFor(year, month) {
   return `https://www.afip.gob.ar/casasparticulares/categorias-y-remuneraciones/documentos/${year}/Casas-particulares-remuneraciones-${mm}-${yy}.pdf`
 }
 
-// "3.996,45" (formato AR) -> 3996.45
+// "3.996,45" o, por un artefacto de espaciado del PDF, "5 05.302,76"
+// (formato AR: "." separador de miles, "," decimal) -> número.
 function parseArsNumber(raw) {
-  return parseFloat(raw.replace(/\./g, '').replace(',', '.'))
+  const clean = raw.replace(/\s/g, '')
+  const lastComma = clean.lastIndexOf(',')
+  if (lastComma === -1) return parseFloat(clean.replace(/\./g, ''))
+  return parseFloat(`${clean.slice(0, lastComma).replace(/\./g, '')}.${clean.slice(lastComma + 1)}`)
+}
+
+// Extrae los montos en $ que siguen a `label` dentro de `norm` (texto ya
+// normalizado, espacios colapsados), hasta el próximo separador conocido.
+// Cada fila de la tabla trae 4 montos: hora con/sin retiro, mes con/sin
+// retiro — en ese orden.
+function extractAmounts(norm, label, stopAt) {
+  const start = norm.indexOf(label)
+  if (start === -1) return null
+  const from = start + label.length
+  const to = stopAt ? norm.indexOf(stopAt, from) : -1
+  const chunk = norm.slice(from, to === -1 ? norm.length : to)
+  return [...chunk.matchAll(/\$\s*(-|[\d.,\s]+?)(?=\s*(?:\$|[A-Za-zÁÉÍÓÚÑáéíóúñ]|$))/g)]
+    .map((m) => (m[1] === '-' ? null : parseArsNumber(m[1])))
 }
 
 async function fetchAndParse(url) {
@@ -23,20 +41,25 @@ async function fetchAndParse(url) {
 
   const buf = Buffer.from(await res.arrayBuffer())
   const { text } = await pdf(buf)
+  // El extractor de texto del PDF corta líneas de forma irregular según
+  // cómo esté maquetada la tabla — normalizamos todo a espacios simples
+  // para no depender de esos saltos.
+  const norm = text.replace(/\s+/g, ' ')
 
-  // Tabla de "Escala de salarios <mes> <año>" con columnas Con retiro /
-  // Sin retiro. Usamos "Con retiro" (jornada, no cama adentro) por hora,
-  // que es lo comparable con el modelo de tarifa por hora de CUID_AR.
-  const vigenciaMatch  = text.match(/Escala de salarios\s+(\w+)\s+(\d{4})/i)
-  const cuidadoMatch   = text.match(/Cuidado de personas\s*\$\s*([\d.,]+)/)
-  const generalesMatch = text.match(/Personal para\s*tareas\s*generales\s*\$\s*([\d.,]+)/)
+  const vigenciaMatch = norm.match(/Escala de salarios\s+(\w+)\s+(\d{4})/i)
 
-  if (!cuidadoMatch || !generalesMatch) return null
+  // [horaConRetiro, horaSinRetiro, mesConRetiro, mesSinRetiro]
+  const cuidado   = extractAmounts(norm, 'Cuidado de personas', 'Personal para tareas generales')
+  const generales = extractAmounts(norm, 'Personal para tareas generales', 'El personal que efectúe')
+
+  if (!cuidado?.[0] || !generales?.[0]) return null
 
   return {
     vigencia: vigenciaMatch ? `${vigenciaMatch[1]} ${vigenciaMatch[2]}` : null,
-    infantil: parseArsNumber(cuidadoMatch[1]),
-    limpieza: parseArsNumber(generalesMatch[1]),
+    infantil: cuidado[0],
+    infantilMensual: cuidado[2] ?? null,
+    limpieza: generales[0],
+    limpiezaMensual: generales[2] ?? null,
     sourceUrl: url,
   }
 }
