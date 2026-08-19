@@ -146,11 +146,20 @@ router.post('/notify', auth, async (req, res) => {
       data: { professionalId: professional.userId, parentId: parent.userId, category },
     })
 
+    // Un solo hilo de chat por par profesional-padre: si ya se habían
+    // contactado antes (otra categoría), reusa la conversación existente
+    // en vez de crear una nueva.
+    const conversation = await prisma.conversation.upsert({
+      where: { professionalId_parentId: { professionalId: professional.userId, parentId: parent.userId } },
+      update: {},
+      create: { professionalId: professional.userId, parentId: parent.userId, category },
+    })
+
     const label = CATEGORY_LABELS[category] ?? category
     const { subject, html } = tpl.notify(professional.name, parent.name, parent.phone, parent.address, label)
     await sendEmail({ to: professional.user.email, subject, html })
 
-    res.json({ success: true })
+    res.json({ success: true, conversationId: conversation.id })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

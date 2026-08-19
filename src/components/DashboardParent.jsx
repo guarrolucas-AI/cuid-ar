@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, MapPin, Tag, DollarSign, Bell, CheckCircle, ShieldCheck, Save, User, Phone, Lock, CreditCard, RefreshCw } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import ChatPanel from './ChatPanel'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -48,6 +49,7 @@ export default function DashboardParent({ user, profile: init }) {
   const [searched, setSearched] = useState(false)
   const [notified, setNotified] = useState({})
   const [toast,    notify]      = useToast()
+  const [openConversationId, setOpenConversationId] = useState(null)
 
   const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: v }))
 
@@ -63,12 +65,14 @@ export default function DashboardParent({ user, profile: init }) {
 
   const handleNotify = async (pro) => {
     try {
-      await fetch(`${API_BASE}/api/match/notify`, {
+      const res = await fetch(`${API_BASE}/api/match/notify`, {
         method:'POST', headers: authHeaders(),
         body: JSON.stringify({ professionalId: pro.userId, category: pro.category }),
       })
+      const data = await res.json()
       setNotified(p => ({ ...p, [pro.userId]: true }))
-      notify('Notificación enviada al profesional')
+      notify('Notificación enviada. Ya podés escribirle por el chat')
+      if (data.conversationId) setOpenConversationId(data.conversationId)
     } catch { notify('Error al enviar la notificación', false) }
   }
 
@@ -188,6 +192,9 @@ export default function DashboardParent({ user, profile: init }) {
           ))}
         </div>
       )}
+
+      {/* Mensajes */}
+      <ChatPanel userId={user.id} openConversationId={openConversationId} onOpened={() => setOpenConversationId(null)} />
         </>
       )}
     </div>

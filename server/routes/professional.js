@@ -37,19 +37,32 @@ router.patch('/me', auth, async (req, res) => {
 })
 
 // GET /api/professional/notifications
-// NOTA: la dirección exacta del solicitante nunca se expone acá — es un
-// dato que la especificación de privacidad restringe al uso interno del
-// sistema (cálculo de distancia) y al backoffice del admin. El teléfono
-// se mantiene por ahora como único canal de contacto real hasta que exista
-// el chat interno del punto "match/chat" del roadmap — a reemplazar ahí.
+// La dirección y el teléfono del solicitante nunca se exponen acá (ni en
+// ningún endpoint público): son datos restringidos al uso interno del
+// sistema (cálculo de distancia) y al backoffice del admin. El contacto
+// real pasa por el chat interno — se devuelve el conversationId de cada
+// solicitud para que el frontend linkee directo a esa conversación.
 router.get('/notifications', auth, async (req, res) => {
   try {
-    const requests = await prisma.contactRequest.findMany({
-      where: { professionalId: req.user.id },
-      include: { parent: { select: { name: true, phone: true } } },
-      orderBy: { createdAt: 'desc' },
-    })
-    res.json(requests)
+    const [requests, conversations] = await Promise.all([
+      prisma.contactRequest.findMany({
+        where: { professionalId: req.user.id },
+        include: { parent: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.conversation.findMany({
+        where: { professionalId: req.user.id },
+        select: { id: true, parentId: true },
+      }),
+    ])
+    const conversationByParent = Object.fromEntries(conversations.map((c) => [c.parentId, c.id]))
+    res.json(requests.map((r) => ({
+      id: r.id,
+      category: r.category,
+      createdAt: r.createdAt,
+      parent: { name: r.parent.name },
+      conversationId: conversationByParent[r.parentId] ?? null,
+    })))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

@@ -37,6 +37,7 @@ model Professional {
   lng             Float?
   travelRadiusKm  Float?           @default(15)
   contactRequests ContactRequest[]
+  conversations   Conversation[]
 }
 
 model Parent {
@@ -49,6 +50,7 @@ model Parent {
   lng             Float?
   maxDistanceKm   Float?           @default(15)
   contactRequests ContactRequest[]
+  conversations   Conversation[]
 }
 
 model ContactRequest {
@@ -58,6 +60,39 @@ model ContactRequest {
   parent         Parent       @relation(fields: [parentId], references: [userId])
   parentId       String
   category       String
+  createdAt      DateTime     @default(now())
+}
+
+// Match / chat / cierre de contratación. Un solo hilo por par
+// profesional-padre (no uno nuevo por cada categoría que consulten) para
+// que el historial quede unificado, estilo red social.
+model Conversation {
+  id                       String    @id @default(uuid())
+  professional             Professional @relation(fields: [professionalId], references: [userId])
+  professionalId           String
+  parent                   Parent    @relation(fields: [parentId], references: [userId])
+  parentId                 String
+  category                 String
+  status                   String    @default("open") // open | agreed
+  agreedByProfessional     Boolean   @default(false)
+  agreedByParent           Boolean   @default(false)
+  agreedAt                 DateTime?
+  // "Borrar historial" es individual: cada quien puede limpiar su propia
+  // vista sin borrar los mensajes para la otra parte.
+  clearedAtForProfessional DateTime?
+  clearedAtForParent       DateTime?
+  createdAt                DateTime  @default(now())
+  messages                 Message[]
+
+  @@unique([professionalId, parentId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  senderId       String
+  body           String
   createdAt      DateTime     @default(now())
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard } from 'lucide-react'
+import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import ChatPanel from './ChatPanel'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -28,6 +29,7 @@ function useToast() {
 export default function DashboardProfessional({ user, professional: init }) {
   const [pro,  setPro]  = useState(init)
   const [toast, notify] = useToast()
+  const [openConversationId, setOpenConversationId] = useState(null)
 
   const patch = async (body) => {
     const res = await fetch(`${API_BASE}/api/professional/me`, {
@@ -111,7 +113,10 @@ export default function DashboardProfessional({ user, professional: init }) {
           </div>
 
           {/* Consultas recibidas */}
-          <ContactRequests />
+          <ContactRequests onOpenChat={setOpenConversationId} />
+
+          {/* Mensajes */}
+          <ChatPanel userId={user.id} openConversationId={openConversationId} onOpened={() => setOpenConversationId(null)} />
 
           {/* Mi perfil */}
           <ProfileForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
@@ -192,7 +197,7 @@ function PaymentWall() {
 
 const CAT_LABELS = { infantil:'Cuidado Infantil', pedagogico:'Apoyo Pedagógico', salud:'Salud Pediátrica', terapeutico:'Cuidado Terapéutico', limpieza:'Limpieza del Hogar' }
 
-function ContactRequests() {
+function ContactRequests({ onOpenChat }) {
   const [requests, setRequests] = useState([])
   const [loading, setLoading]   = useState(true)
 
@@ -232,14 +237,16 @@ function ContactRequests() {
                     {CAT_LABELS[req.category] ?? req.category}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                  <span className="flex items-center gap-1"><Phone className="w-3 h-3"/>{req.parent.phone}</span>
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/>{req.parent.address}</span>
-                </div>
+                <p className="text-xs text-gray-400">
+                  {new Date(req.createdAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' })}
+                </p>
               </div>
-              <span className="text-xs text-gray-400 flex-shrink-0">
-                {new Date(req.createdAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' })}
-              </span>
+              {req.conversationId && (
+                <button onClick={() => onOpenChat(req.conversationId)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-teal-600 hover:text-teal-700 flex-shrink-0">
+                  <MessageCircle className="w-4 h-4"/>Ver conversación
+                </button>
+              )}
             </div>
           ))}
         </div>

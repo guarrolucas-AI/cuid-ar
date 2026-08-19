@@ -9,6 +9,7 @@ import professionalRoutes from './routes/professional.js'
 import adminRoutes from './routes/admin.js'
 import accountRoutes from './routes/account.js'
 import parentRoutes from './routes/parent.js'
+import chatRoutes from './routes/chat.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -42,6 +43,7 @@ app.use('/api/professional', professionalRoutes)
 app.use('/api/admin',        adminRoutes)
 app.use('/api/account',     accountRoutes)
 app.use('/api/parent',      parentRoutes)
+app.use('/api/chat',        chatRoutes)
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }))
 
