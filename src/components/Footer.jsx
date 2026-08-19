@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Heart, Instagram, Facebook, Linkedin, Mail, Phone, MapPin } from 'lucide-react'
 
 const servicios = [
@@ -16,10 +17,10 @@ const empresa = [
 ]
 
 const legal = [
-  { label: 'Términos y Condiciones', href: '#' },
-  { label: 'Política de Privacidad', href: '#' },
-  { label: 'Política de Uso de Datos', href: '#' },
-  { label: 'Aviso Legal', href: '#' },
+  { label: 'Términos y Condiciones', href: '/legal/terminos-y-condiciones' },
+  { label: 'Política de Privacidad', href: '/legal/politica-de-privacidad' },
+  { label: 'Política de Uso de Datos', href: '/legal/politica-de-datos' },
+  { label: 'Aviso Legal', href: '/legal/aviso-legal' },
 ]
 
 export default function Footer() {
@@ -113,9 +114,9 @@ export default function Footer() {
             <ul className="space-y-2">
               {legal.map((l) => (
                 <li key={l.label}>
-                  <a href={l.href} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                  <Link to={l.href} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
                     {l.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

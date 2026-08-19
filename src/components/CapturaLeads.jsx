@@ -1,8 +1,5 @@
+import { Link } from 'react-router-dom'
 import { UserCheck, Search, ArrowRight, CheckCircle } from 'lucide-react'
-
-// ⚙️ CONFIGURACIÓN: Reemplazá con tus URLs de Google Forms / Typeform antes del lanzamiento
-const URL_FORM_FAMILIAS = 'https://forms.gle/REEMPLAZAR_CON_TU_FORM'
-const URL_FORM_PROFESIONALES = 'https://forms.gle/REEMPLAZAR_CON_TU_FORM'
 
 const beneficiosFamilias = [
   'Profesionales verificados con antecedentes limpios',
@@ -57,15 +54,13 @@ export default function CapturaLeads() {
                 </li>
               ))}
             </ul>
-            <a
-              href={URL_FORM_FAMILIAS}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/register?role=padre"
               className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold rounded-2xl hover:from-teal-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
             >
               Quiero encontrar un profesional
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
 
           {/* Card Profesionales */}
@@ -88,15 +83,13 @@ export default function CapturaLeads() {
                 </li>
               ))}
             </ul>
-            <a
-              href={URL_FORM_PROFESIONALES}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/register?role=profesional"
               className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-2xl hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
             >
               Registrarme como profesional
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
         </div>
       </div>

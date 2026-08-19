@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, AlertCircle, Baby, Home, Users, GraduationCap, Stethoscope, Sparkles } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -23,10 +23,14 @@ const DEFAULTS = {
   address: '',
 }
 
+const VALID_ROLES = ['padre', 'profesional']
+
 export default function RegisterPage() {
   const { register } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm]   = useState(DEFAULTS)
+  const [searchParams] = useSearchParams()
+  const preselectedRole = VALID_ROLES.includes(searchParams.get('role')) ? searchParams.get('role') : ''
+  const [form, setForm]   = useState({ ...DEFAULTS, role: preselectedRole })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
