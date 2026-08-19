@@ -24,6 +24,16 @@ async function getRateTolerance() {
   return config ? parseFloat(config.value) : 5000
 }
 
+// Con qué categoría mostrar la tarifa oficial de referencia: si la
+// búsqueda filtró por una categoría puntual, esa; si no (navegando
+// "todas"), la primera de las especialidades del profesional que tenga
+// un valor oficial cargado.
+function pickOfficialRate(pro, searchedCategory, officialRates) {
+  if (searchedCategory) return officialRates[searchedCategory] ?? null
+  const withRate = (pro.categories ?? []).find((c) => officialRates[c] != null)
+  return withRate ? officialRates[withRate] : null
+}
+
 // GET /api/match/rates — tarifas de referencia oficiales por categoría y la
 // tolerancia vigente. Público: sirve tanto para mostrarlo a un visitante
 // como para la calculadora de multiservicio.
@@ -76,13 +86,13 @@ router.get('/search', optionalAuth, async (req, res) => {
           verified: true,
           user: { status: 'subscribed' },
           ...(zone     && { zone }),
-          ...(category && { category }),
+          ...(category && { categories: { has: category } }),
           ...(maxRate  && { hourlyRate: { lte: parseFloat(maxRate) } }),
         },
         orderBy: { hourlyRate: 'asc' },
         take: DEFAULT_RESULT_LIMIT,
       })
-      return res.json(professionals.map((pro) => toProfessionalView(pro, viewerSubscribed, officialRates[pro.category] ?? null)))
+      return res.json(professionals.map((pro) => toProfessionalView(pro, viewerSubscribed, pickOfficialRate(pro, category, officialRates))))
     }
 
     const latNum = parseFloat(lat)
@@ -107,7 +117,7 @@ router.get('/search', optionalAuth, async (req, res) => {
         AND u."status" = 'subscribed'
         AND p."lat" IS NOT NULL AND p."lng" IS NOT NULL
         ${zone ? Prisma.sql`AND p."zone" = ${zone}` : Prisma.empty}
-        ${category ? Prisma.sql`AND p."category" = ${category}` : Prisma.empty}
+        ${category ? Prisma.sql`AND ${category} = ANY(p."categories")` : Prisma.empty}
         ${maxRate ? Prisma.sql`AND p."hourlyRate" <= ${parseFloat(maxRate)}` : Prisma.empty}
       ORDER BY "distanceKm" ASC
       LIMIT ${DEFAULT_RESULT_LIMIT * 3}
@@ -120,7 +130,7 @@ router.get('/search', optionalAuth, async (req, res) => {
       return true
     }).slice(0, DEFAULT_RESULT_LIMIT)
 
-    res.json(inRange.map((pro) => toProfessionalView(pro, viewerSubscribed, officialRates[pro.category] ?? null)))
+    res.json(inRange.map((pro) => toProfessionalView(pro, viewerSubscribed, pickOfficialRate(pro, category, officialRates))))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

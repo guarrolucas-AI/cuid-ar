@@ -64,10 +64,14 @@ export default function DashboardParent({ user, profile: init }) {
   }
 
   const handleNotify = async (pro) => {
+    // Si la búsqueda filtró por una categoría puntual, esa es la consulta.
+    // Si no (navegando "todas"), usamos la primera especialidad del
+    // profesional como default razonable.
+    const category = filters.category || pro.categories?.[0]
     try {
       const res = await fetch(`${API_BASE}/api/match/notify`, {
         method:'POST', headers: authHeaders(),
-        body: JSON.stringify({ professionalId: pro.userId, category: pro.category }),
+        body: JSON.stringify({ professionalId: pro.userId, category }),
       })
       const data = await res.json()
       setNotified(p => ({ ...p, [pro.userId]: true }))
@@ -173,7 +177,7 @@ export default function DashboardParent({ user, profile: init }) {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-3 text-sm text-gray-500">
-                  <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5"/>{CAT_LABELS[pro.category] ?? pro.category}</span>
+                  <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5"/>{(pro.categories ?? []).map(c => CAT_LABELS[c] ?? c).join(', ')}</span>
                   <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>{ZONE_LABELS[pro.zone] ?? pro.zone}</span>
                   <span className="flex items-center gap-1 font-semibold text-teal-600">
                     <DollarSign className="w-3.5 h-3.5"/>${Number(pro.hourlyRate).toLocaleString('es-AR')}/hr

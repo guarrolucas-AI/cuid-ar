@@ -57,9 +57,11 @@ export default function DashboardProfessional({ user, professional: init }) {
           <h2 className="font-heading text-2xl font-bold text-gray-800">{pro.name}</h2>
           <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <span className="text-xs font-semibold bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
-              {CATEGORIES.find(c => c.value === pro.category)?.label ?? pro.category}
-            </span>
+            {(pro.categories ?? []).map((cat) => (
+              <span key={cat} className="text-xs font-semibold bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
+                {CATEGORIES.find(c => c.value === cat)?.label ?? cat}
+              </span>
+            ))}
             {subscribed
               ? <span className="text-xs font-semibold bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center gap-1">
                   <CreditCard className="w-3 h-3"/>Suscripción activa
@@ -311,13 +313,20 @@ function ContactRequests({ onOpenChat }) {
 }
 
 function ProfileForm({ pro, setPro, patch, notify }) {
-  const [form, setForm] = useState({ name: pro.name, phone: pro.phone, zone: pro.zone, category: pro.category })
+  const [form, setForm] = useState({ name: pro.name, phone: pro.phone, zone: pro.zone, categories: pro.categories ?? [] })
   const [saving, setSaving] = useState(false)
+  const [catError, setCatError] = useState('')
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const toggleCategory = (value) => setForm(f => ({
+    ...f,
+    categories: f.categories.includes(value) ? f.categories.filter(c => c !== value) : [...f.categories, value],
+  }))
   const inputClass = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400'
 
   const handleSave = async (e) => {
     e.preventDefault()
+    if (form.categories.length === 0) return setCatError('Elegí al menos una especialidad')
+    setCatError('')
     setSaving(true)
     try {
       const u = await patch(form)
@@ -341,19 +350,28 @@ function ProfileForm({ pro, setPro, patch, notify }) {
             <input value={form.phone} onChange={e => set('phone', e.target.value)} required className={inputClass}/>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>Zona</label>
-            <select value={form.zone} onChange={e => set('zone', e.target.value)} required className={inputClass}>
-              {ZONES.map(z => <option key={z} value={z}>{ZONE_LABELS[z]}</option>)}
-            </select>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>Zona</label>
+          <select value={form.zone} onChange={e => set('zone', e.target.value)} required className={inputClass}>
+            {ZONES.map(z => <option key={z} value={z}>{ZONE_LABELS[z]}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><Tag className="w-3.5 h-3.5"/>Especialidad(es)</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {CATEGORIES.map(c => {
+              const selected = form.categories.includes(c.value)
+              return (
+                <button key={c.value} type="button" onClick={() => toggleCategory(c.value)} aria-pressed={selected}
+                  className={`px-3 py-2 rounded-xl border-2 text-xs font-semibold transition-all ${
+                    selected ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600 hover:border-teal-300'
+                  }`}>
+                  {c.label}
+                </button>
+              )
+            })}
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><Tag className="w-3.5 h-3.5"/>Especialidad</label>
-            <select value={form.category} onChange={e => set('category', e.target.value)} required className={inputClass}>
-              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-          </div>
+          {catError && <p className="text-xs text-red-500 mt-1.5">{catError}</p>}
         </div>
         <button type="submit" disabled={saving}
           className="flex items-center gap-2 px-5 py-2.5 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 text-sm">

@@ -26,7 +26,15 @@ model Professional {
   name            String
   phone           String
   zone            String
-  category        String
+  // DEPRECATED — reemplazado por `categories` (String[]) para permitir más
+  // de un servicio por profesional. Se deja la columna sin usar en vez de
+  // borrarla (evita un drop destructivo sobre datos reales); no la lee ni
+  // la escribe ningún endpoint desde el cambio a multi-especialidad.
+  category        String?
+  // Un profesional puede ofrecer más de un servicio (ej. cuidado infantil
+  // + limpieza). ContactRequest/Conversation siguen guardando un único
+  // category — cuál de esos servicios puntuales fue la consulta.
+  categories      String[]         @default([])
   verified        Boolean          @default(false)
   hourlyRate      Float
   available       Boolean          @default(true)

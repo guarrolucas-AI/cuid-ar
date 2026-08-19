@@ -14,7 +14,7 @@ export function toProfessionalView(pro, viewerSubscribed, officialRate = null) {
     userId: pro.userId,
     name: pro.name,
     zone: pro.zone,
-    category: pro.category,
+    categories: pro.categories ?? [],
     hourlyRate: pro.hourlyRate,
     verified: pro.verified,
     photoUrl: pro.photoUrl ?? null,

@@ -156,7 +156,7 @@ export default function SearchPage() {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-3 text-sm text-gray-500">
-                    <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" />{CAT_LABELS[pro.category] ?? pro.category}</span>
+                    <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" />{(pro.categories ?? []).map(c => CAT_LABELS[c] ?? c).join(', ')}</span>
                     <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />
                       {pro.distanceKm != null ? `${pro.distanceKm} km` : (ZONE_LABELS[pro.zone] ?? pro.zone)}
                     </span>
@@ -167,7 +167,7 @@ export default function SearchPage() {
                   {subscribed && pro.officialRate != null && (
                     <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
                       <Info className="w-3 h-3" />
-                      Valor oficial de referencia para {CAT_LABELS[pro.category]?.toLowerCase() ?? pro.category}: ${Number(pro.officialRate).toLocaleString('es-AR')}/hr
+                      Valor oficial de referencia para {(CAT_LABELS[category] ?? CAT_LABELS[pro.categories?.[0]] ?? '')?.toLowerCase()}: ${Number(pro.officialRate).toLocaleString('es-AR')}/hr
                     </p>
                   )}
                   {subscribed && pro.certifications?.length > 0 && (

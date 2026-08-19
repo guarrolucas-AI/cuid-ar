@@ -158,10 +158,15 @@ router.get('/stats', async (req, res) => {
       prisma.professional.count({ where: { available: true } }),
     ])
 
-    const byCategory = await prisma.professional.groupBy({
-      by: ['category'],
-      _count: { category: true },
-    })
+    // groupBy no sirve para contar por elemento de un array — un
+    // profesional con 2 categorías cuenta en las 2. unnest() lo resuelve,
+    // pero Postgres no permite mezclar una set-returning function con
+    // GROUP BY en el mismo nivel de SELECT — de ahí la subquery.
+    const byCategoryRows = await prisma.$queryRaw`
+      SELECT category, count(*)::int AS count
+      FROM (SELECT unnest("categories") AS category FROM "Professional") sub
+      GROUP BY category
+    `
 
     res.json({
       totalUsers,
@@ -169,7 +174,7 @@ router.get('/stats', async (req, res) => {
       parents,
       verified,
       available,
-      byCategory: Object.fromEntries(byCategory.map((r) => [r.category, r._count.category])),
+      byCategory: Object.fromEntries(byCategoryRows.map((r) => [r.category, r.count])),
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -182,7 +187,7 @@ router.get('/professionals', async (req, res) => {
     const { category, zone, verified } = req.query
     const professionals = await prisma.professional.findMany({
       where: {
-        ...(category && { category }),
+        ...(category && { categories: { has: category } }),
         ...(zone     && { zone }),
         ...(verified !== undefined && verified !== '' && { verified: verified === 'true' }),
       },

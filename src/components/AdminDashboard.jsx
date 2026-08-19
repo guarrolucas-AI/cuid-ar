@@ -370,7 +370,7 @@ function ProfessionalsSection({ notify }) {
                   <tr key={pro.userId} className="hover:bg-gray-50 transition-colors">
                     <td className="py-3 pr-4 font-medium text-gray-800">{pro.name}</td>
                     <td className="py-3 pr-4 text-gray-500 text-xs">{pro.user?.email}</td>
-                    <td className="py-3 pr-4 text-gray-600 hidden sm:table-cell">{CATEGORY_LABELS[pro.category] ?? pro.category}</td>
+                    <td className="py-3 pr-4 text-gray-600 hidden sm:table-cell">{(pro.categories ?? []).map(c => CATEGORY_LABELS[c] ?? c).join(', ')}</td>
                     <td className="py-3 pr-4 text-gray-600 hidden md:table-cell">{ZONE_LABELS[pro.zone] ?? pro.zone}</td>
                     <td className="py-3 pr-4 text-teal-600 font-semibold hidden md:table-cell">${Number(pro.hourlyRate).toLocaleString('es-AR')}</td>
                     <td className="py-3 pr-4">

@@ -20,7 +20,7 @@ const DEFAULTS = {
   email: '', password: '', confirmPassword: '',
   role: '', name: '', phone: '',
   // profesional
-  zone: '', category: '', hourlyRate: '', travelRadiusKm: '15',
+  zone: '', categories: [], hourlyRate: '', travelRadiusKm: '15',
   // padre
   address: '', maxDistanceKm: '15',
 }
@@ -37,12 +37,19 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+  const toggleCategory = (value) => setForm((f) => ({
+    ...f,
+    categories: f.categories.includes(value)
+      ? f.categories.filter((c) => c !== value)
+      : [...f.categories, value],
+  }))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     if (form.password !== form.confirmPassword) return setError('Las contraseñas no coinciden')
     if (!form.role) return setError('Elegí un tipo de cuenta')
+    if (form.role === 'profesional' && form.categories.length === 0) return setError('Elegí al menos una especialidad')
     setLoading(true)
     try {
       await register(form)
@@ -154,21 +161,26 @@ export default function RegisterPage() {
                 <p className="text-xs font-bold text-teal-600 uppercase tracking-widest">Datos profesionales</p>
 
                 <div>
-                  <label className={labelClass}>Especialidad</label>
+                  <label className={labelClass}>Especialidad(es)</label>
+                  <p className="text-xs text-gray-400 -mt-1 mb-2">Podés elegir más de una si ofrecés varios servicios.</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {CATEGORIES.map(({ value, label, icon: Icon }) => (
-                      <button key={value} type="button"
-                        onClick={() => set('category', value)}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-xs font-semibold transition-all ${
-                          form.category === value
-                            ? 'border-teal-500 bg-teal-50 text-teal-700'
-                            : 'border-gray-200 text-gray-600 hover:border-teal-300'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4 flex-shrink-0" />
-                        {label}
-                      </button>
-                    ))}
+                    {CATEGORIES.map(({ value, label, icon: Icon }) => {
+                      const selected = form.categories.includes(value)
+                      return (
+                        <button key={value} type="button"
+                          onClick={() => toggleCategory(value)}
+                          aria-pressed={selected}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-xs font-semibold transition-all ${
+                            selected
+                              ? 'border-teal-500 bg-teal-50 text-teal-700'
+                              : 'border-gray-200 text-gray-600 hover:border-teal-300'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4 flex-shrink-0" />
+                          {label}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 

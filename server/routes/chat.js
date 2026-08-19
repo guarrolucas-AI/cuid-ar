@@ -14,7 +14,7 @@ async function loadConversationForUser(conversationId, userId) {
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: {
-      professional: { select: { userId: true, name: true, photoUrl: true, category: true } },
+      professional: { select: { userId: true, name: true, photoUrl: true } },
       parent: { select: { userId: true, name: true } },
     },
   })
@@ -34,7 +34,7 @@ router.get('/conversations', async (req, res) => {
     const conversations = await prisma.conversation.findMany({
       where,
       include: {
-        professional: { select: { userId: true, name: true, photoUrl: true, category: true } },
+        professional: { select: { userId: true, name: true, photoUrl: true } },
         parent: { select: { userId: true, name: true } },
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },
       },

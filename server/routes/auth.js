@@ -13,9 +13,13 @@ const router = Router()
 router.post('/register', async (req, res) => {
   try {
     const {
-      email, password, role, name, phone, zone, category, hourlyRate,
+      email, password, role, name, phone, zone, categories, hourlyRate,
       address, travelRadiusKm, maxDistanceKm,
     } = req.body
+
+    if (role === 'profesional' && (!Array.isArray(categories) || categories.length === 0)) {
+      return res.status(400).json({ error: 'Elegí al menos una especialidad' })
+    }
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return res.status(409).json({ error: 'El email ya está registrado' })
@@ -34,7 +38,7 @@ router.post('/register', async (req, res) => {
         ...(role === 'profesional' && {
           professional: {
             create: {
-              name, phone, zone, category, hourlyRate: parseFloat(hourlyRate),
+              name, phone, zone, categories, hourlyRate: parseFloat(hourlyRate),
               address: address || null,
               lat: coords?.lat ?? null,
               lng: coords?.lng ?? null,

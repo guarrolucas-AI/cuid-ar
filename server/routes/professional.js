@@ -21,16 +21,19 @@ router.get('/me', auth, async (req, res) => {
 // PATCH /api/professional/me
 router.patch('/me', auth, async (req, res) => {
   try {
-    const { available, hourlyRate, name, phone, zone, category } = req.body
+    const { available, hourlyRate, name, phone, zone, categories } = req.body
+    if (categories !== undefined && (!Array.isArray(categories) || categories.length === 0)) {
+      return res.status(400).json({ error: 'Elegí al menos una especialidad' })
+    }
     const updated = await prisma.professional.update({
       where: { userId: req.user.id },
       data: {
-        ...(available  !== undefined && { available }),
-        ...(hourlyRate !== undefined && { hourlyRate: parseFloat(hourlyRate) }),
-        ...(name     && { name }),
-        ...(phone    && { phone }),
-        ...(zone     && { zone }),
-        ...(category && { category }),
+        ...(available   !== undefined && { available }),
+        ...(hourlyRate  !== undefined && { hourlyRate: parseFloat(hourlyRate) }),
+        ...(name       && { name }),
+        ...(phone      && { phone }),
+        ...(zone       && { zone }),
+        ...(categories && { categories }),
       },
     })
     res.json(updated)
