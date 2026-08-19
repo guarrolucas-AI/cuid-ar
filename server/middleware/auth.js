@@ -16,3 +16,19 @@ export const auth = async (req, res, next) => {
     res.status(401).json({ error: 'Token inválido o expirado' })
   }
 }
+
+// Igual que `auth`, pero no bloquea si no hay token: deja req.user en null
+// para rutas públicas que además quieren dar más datos si hay sesión activa
+// (ej. la búsqueda de profesionales, visible para visitantes sin cuenta).
+export const optionalAuth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) { req.user = null; return next() }
+
+    const { userId } = jwt.verify(token, process.env.JWT_SECRET)
+    req.user = await prisma.user.findUnique({ where: { id: userId } })
+  } catch {
+    req.user = null
+  }
+  next()
+}

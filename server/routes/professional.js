@@ -37,11 +37,16 @@ router.patch('/me', auth, async (req, res) => {
 })
 
 // GET /api/professional/notifications
+// NOTA: la dirección exacta del solicitante nunca se expone acá — es un
+// dato que la especificación de privacidad restringe al uso interno del
+// sistema (cálculo de distancia) y al backoffice del admin. El teléfono
+// se mantiene por ahora como único canal de contacto real hasta que exista
+// el chat interno del punto "match/chat" del roadmap — a reemplazar ahí.
 router.get('/notifications', auth, async (req, res) => {
   try {
     const requests = await prisma.contactRequest.findMany({
       where: { professionalId: req.user.id },
-      include: { parent: { select: { name: true, phone: true, address: true } } },
+      include: { parent: { select: { name: true, phone: true } } },
       orderBy: { createdAt: 'desc' },
     })
     res.json(requests)

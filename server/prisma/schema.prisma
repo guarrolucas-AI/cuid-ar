@@ -30,6 +30,8 @@ model Professional {
   verified        Boolean          @default(false)
   hourlyRate      Float
   available       Boolean          @default(true)
+  photoUrl        String?
+  certifications  String[]         @default([])
   contactRequests ContactRequest[]
 }
 

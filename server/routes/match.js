@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
-import { auth } from '../middleware/auth.js'
+import { auth, optionalAuth } from '../middleware/auth.js'
 import { sendEmail, tpl } from '../lib/email.js'
+import { toProfessionalView } from '../lib/professionalView.js'
 
 const router = Router()
 
@@ -11,10 +12,12 @@ const CATEGORY_LABELS = {
 }
 
 // GET /api/match/search?zone=CABA&category=infantil&maxRate=8000
-router.get('/search', auth, async (req, res) => {
+// Público: cualquier visitante ve el listado (nombre, foto, zona, categoría,
+// tarifa estimada, verificado). Si además está logueado y abonado, ve los
+// campos extra de toProfessionalView. Nunca se devuelve teléfono, mail, DNI
+// ni dirección — eso no sale de la API bajo ningún nivel.
+router.get('/search', optionalAuth, async (req, res) => {
   try {
-    if (req.user.status !== 'subscribed')
-      return res.status(403).json({ error: 'Se requiere suscripción activa' })
     const { zone, category, maxRate } = req.query
     const professionals = await prisma.professional.findMany({
       where: {
@@ -26,9 +29,9 @@ router.get('/search', auth, async (req, res) => {
         ...(maxRate  && { hourlyRate: { lte: parseFloat(maxRate) } }),
       },
       orderBy: { hourlyRate: 'asc' },
-      include: { user: { select: { email: true, status: true } } },
     })
-    res.json(professionals)
+    const viewerSubscribed = req.user?.status === 'subscribed'
+    res.json(professionals.map((pro) => toProfessionalView(pro, viewerSubscribed)))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
