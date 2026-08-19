@@ -123,3 +123,16 @@ model ServiceRate {
   officialRate Float?
   updatedAt    DateTime @updatedAt
 }
+
+// Auditoría de acciones del admin (verificaciones, altas/bajas de
+// suscripción, cambios de aranceles y de configuración) — trazabilidad
+// de "quién hizo qué y cuándo" en el backoffice.
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  adminEmail String
+  action     String
+  targetType String?
+  targetId   String?
+  detail     String?
+  createdAt  DateTime @default(now())
+}

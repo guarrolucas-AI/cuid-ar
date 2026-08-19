@@ -19,6 +19,19 @@ const DEFAULT_CONFIG = [
 
 const RATE_CATEGORIES = ['infantil', 'pedagogico', 'salud', 'terapeutico', 'limpieza']
 
+// Registra una acción del admin para trazabilidad — nunca bloquea la
+// respuesta principal si falla (no queremos que un problema de logging
+// tumbe una verificación real).
+async function logAudit(req, action, { targetType, targetId, detail } = {}) {
+  try {
+    await prisma.adminAuditLog.create({
+      data: { adminEmail: req.user.email, action, targetType, targetId, detail },
+    })
+  } catch (err) {
+    console.error('audit log failed:', err)
+  }
+}
+
 // GET /api/admin/config — devuelve config, enmascara campos sensibles
 router.get('/config', async (req, res) => {
   try {
@@ -59,6 +72,7 @@ router.patch('/config', async (req, res) => {
       )
     )
 
+    await logAudit(req, 'config.update', { detail: updates.map(([k]) => k).join(', ') })
     res.json({ updated: results.length })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -96,6 +110,7 @@ router.patch('/rates', async (req, res) => {
         })
       )
     )
+    await logAudit(req, 'rates.update', { detail: updates.map(([cat, rate]) => `${cat}=${rate}`).join(', ') })
     res.json(results)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -164,6 +179,9 @@ router.post('/verify/:userId', async (req, res) => {
       const { subject, html } = tpl.verified(updated.name)
       sendEmail({ to: updated.user.email, subject, html }).catch(console.error)
     }
+    await logAudit(req, verified ? 'professional.verify' : 'professional.unverify', {
+      targetType: 'Professional', targetId: updated.userId, detail: updated.name,
+    })
     res.json(updated)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -177,6 +195,9 @@ router.post('/subscription/:userId', async (req, res) => {
     const updated = await prisma.user.update({
       where: { id: req.params.userId },
       data: { status: active ? 'subscribed' : 'active' },
+    })
+    await logAudit(req, active ? 'subscription.activate' : 'subscription.deactivate', {
+      targetType: 'User', targetId: updated.id, detail: updated.email,
     })
     res.json({ userId: updated.id, status: updated.status })
   } catch (err) {
@@ -192,6 +213,19 @@ router.get('/parents', async (req, res) => {
       orderBy: { user: { createdAt: 'desc' } },
     })
     res.json(parents)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/admin/audit — últimas acciones del backoffice (auditoría)
+router.get('/audit', async (req, res) => {
+  try {
+    const logs = await prisma.adminAuditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
+    res.json(logs)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

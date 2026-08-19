@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Settings, Users, ShieldCheck, ShieldX, ToggleLeft, ToggleRight,
   Save, Eye, EyeOff, RefreshCw, CheckCircle, AlertCircle, Lock,
-  MapPin, Tag, Phone, Filter, DollarSign, Clock,
+  MapPin, Tag, Phone, Filter, DollarSign, Clock, History,
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -238,6 +238,9 @@ export default function AdminDashboard() {
 
       {/* Lista de familias */}
       <ParentsSection />
+
+      {/* Auditoría de acciones del admin */}
+      <AuditLogSection />
 
       {/* Cambio de contraseña */}
       <ChangePasswordSection notify={notify} />
@@ -593,6 +596,71 @@ function ParentsSection() {
               </tbody>
             </table>
             <p className="text-xs text-gray-400 mt-3">{parents.length} familia{parents.length !== 1 ? 's' : ''}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+// ── Sección auditoría ──────────────────────────────────────────────────────
+const AUDIT_ACTION_LABELS = {
+  'config.update': 'Actualizó configuración',
+  'rates.update': 'Actualizó aranceles',
+  'professional.verify': 'Verificó profesional',
+  'professional.unverify': 'Quitó verificación',
+  'subscription.activate': 'Activó suscripción',
+  'subscription.deactivate': 'Desactivó suscripción',
+}
+
+function AuditLogSection() {
+  const [logs, setLogs]       = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/admin/audit`, { headers: headers() })
+      .then((r) => r.json())
+      .then((data) => { setLogs(Array.isArray(data) ? data : []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  return (
+    <section>
+      <h2 className="font-heading font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <History className="w-5 h-5 text-teal-500" /> Auditoría
+      </h2>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        {loading ? (
+          <div className="flex items-center justify-center py-10 text-gray-400">
+            <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando…
+          </div>
+        ) : logs.length === 0 ? (
+          <p className="text-center py-10 text-sm text-gray-400">Todavía no hay acciones registradas.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-500 border-b border-gray-100">
+                  <th className="text-left py-2 pr-4 font-semibold">Fecha</th>
+                  <th className="text-left py-2 pr-4 font-semibold">Admin</th>
+                  <th className="text-left py-2 pr-4 font-semibold">Acción</th>
+                  <th className="text-left py-2 pr-4 font-semibold">Detalle</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 pr-4 text-gray-500 text-xs whitespace-nowrap">
+                      {new Date(log.createdAt).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="py-3 pr-4 text-gray-600 text-xs">{log.adminEmail}</td>
+                    <td className="py-3 pr-4 font-medium text-gray-800">{AUDIT_ACTION_LABELS[log.action] ?? log.action}</td>
+                    <td className="py-3 pr-4 text-gray-500 text-xs">{log.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-xs text-gray-400 mt-3">Últimas {logs.length} acciones</p>
           </div>
         )}
       </div>
