@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js'
 import { auth } from '../middleware/auth.js'
 import { adminOnly } from '../middleware/adminOnly.js'
 import { sendEmail, tpl } from '../lib/email.js'
+import { fetchCasasParticularesRates } from '../lib/officialRates.js'
 
 const router = Router()
 router.use(auth, adminOnly)
@@ -102,18 +103,47 @@ router.patch('/rates', async (req, res) => {
   try {
     const updates = Object.entries(req.body).filter(([category]) => RATE_CATEGORIES.includes(category))
     const results = await Promise.all(
-      updates.map(([category, officialRate]) =>
-        prisma.serviceRate.upsert({
+      updates.map(([category, officialRate]) => {
+        const rate = officialRate === '' || officialRate == null ? null : parseFloat(officialRate)
+        return prisma.serviceRate.upsert({
           where: { category },
-          update: { officialRate: officialRate === '' || officialRate == null ? null : parseFloat(officialRate) },
-          create: { category, officialRate: officialRate === '' || officialRate == null ? null : parseFloat(officialRate) },
+          update: { officialRate: rate, source: rate == null ? null : 'Manual' },
+          create: { category, officialRate: rate, source: rate == null ? null : 'Manual' },
         })
-      )
+      })
     )
     await logAudit(req, 'rates.update', { detail: updates.map(([cat, rate]) => `${cat}=${rate}`).join(', ') })
     res.json(results)
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/admin/rates/fetch-official — trae automáticamente la escala
+// vigente de Personal de Casas Particulares (fuente: ARCA/ex AFIP) y
+// actualiza infantil/limpieza, las dos únicas categorías cubiertas por
+// ese régimen. El admin puede sobreescribir cualquiera de los dos a mano
+// después con el formulario de arriba (eso vuelve a marcarlo "Manual").
+router.post('/rates/fetch-official', async (req, res) => {
+  try {
+    const data = await fetchCasasParticularesRates()
+    const source = `ARCA (Casas Particulares) — vigente ${data.vigencia}`
+    const [infantil, limpieza] = await Promise.all([
+      prisma.serviceRate.upsert({
+        where: { category: 'infantil' },
+        update: { officialRate: data.infantil, source },
+        create: { category: 'infantil', officialRate: data.infantil, source },
+      }),
+      prisma.serviceRate.upsert({
+        where: { category: 'limpieza' },
+        update: { officialRate: data.limpieza, source },
+        create: { category: 'limpieza', officialRate: data.limpieza, source },
+      }),
+    ])
+    await logAudit(req, 'rates.fetch-official', { detail: `${source} — infantil=${data.infantil}, limpieza=${data.limpieza}` })
+    res.json({ infantil, limpieza, vigencia: data.vigencia, sourceUrl: data.sourceUrl })
+  } catch (err) {
+    res.status(502).json({ error: err.message })
   }
 })
 

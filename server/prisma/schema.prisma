@@ -121,6 +121,10 @@ model AppConfig {
 model ServiceRate {
   category     String   @id
   officialRate Float?
+  // De dónde salió el valor: "Manual" (lo cargó el admin a mano) o la
+  // fuente oficial usada por el fetcher automático (ej. "ARCA (Casas
+  // Particulares) — vigente julio 2026"). Puramente informativo.
+  source       String?
   updatedAt    DateTime @updatedAt
 }
 

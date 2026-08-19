@@ -429,6 +429,7 @@ function RatesSection({ notify }) {
   const [draft, setDraft]     = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
+  const [fetchingOfficial, setFetchingOfficial] = useState(false)
 
   const load = () => {
     fetch(`${API_BASE}/api/admin/rates`, { headers: headers() })
@@ -461,6 +462,20 @@ function RatesSection({ notify }) {
     setSaving(false)
   }
 
+  const handleFetchOfficial = async () => {
+    setFetchingOfficial(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/rates/fetch-official`, { method: 'POST', headers: headers() })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      notify('ok', `Aranceles de Casas Particulares actualizados (vigente ${data.vigencia})`)
+      load()
+    } catch (err) {
+      notify('err', err.message)
+    }
+    setFetchingOfficial(false)
+  }
+
   return (
     <section>
       <h2 className="font-heading font-bold text-gray-700 mb-4 flex items-center gap-2">
@@ -468,10 +483,22 @@ function RatesSection({ notify }) {
       </h2>
       <form onSubmit={handleSave} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
         <p className="text-xs text-gray-400 -mt-1 mb-2">
-          Valor oficial por hora, por categoría (nomencladores AFIP/CNTP/Salud). Se muestra a los usuarios abonados
-          junto a la tarifa que pretende cada profesional. La tolerancia (±$) se configura en la sección de arriba,
-          campo &ldquo;Tolerancia sobre la tarifa oficial&rdquo;.
+          Valor oficial por hora, por categoría. Se muestra a los usuarios abonados junto a la tarifa que pretende
+          cada profesional. La tolerancia (±$) se configura en la sección de arriba, campo &ldquo;Tolerancia sobre
+          la tarifa oficial&rdquo;.
         </p>
+        <div className="flex items-center justify-between gap-3 bg-teal-50/60 border border-teal-100 rounded-xl p-4 flex-wrap">
+          <p className="text-xs text-gray-600">
+            <strong className="text-gray-700">Cuidado Infantil</strong> y <strong className="text-gray-700">Limpieza del Hogar</strong> tienen
+            fuente oficial única (ARCA, ex AFIP — Personal de Casas Particulares). Las otras 3 categorías no tienen
+            un nomenclador nacional unificado y se cargan a mano.
+          </p>
+          <button type="button" onClick={handleFetchOfficial} disabled={fetchingOfficial}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white text-sm font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 flex-shrink-0 whitespace-nowrap">
+            <RefreshCw className={`w-3.5 h-3.5 ${fetchingOfficial ? 'animate-spin' : ''}`} />
+            {fetchingOfficial ? 'Actualizando…' : 'Actualizar desde ARCA'}
+          </button>
+        </div>
         {loading ? (
           <div className="flex items-center justify-center py-8 text-gray-400">
             <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando…
@@ -493,9 +520,9 @@ function RatesSection({ notify }) {
                     className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
                 </div>
-                <span className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
-                  <Clock className="w-3 h-3" />
-                  {r.updatedAt ? `Actualizado ${new Date(r.updatedAt).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' })}` : 'Sin actualizar'}
+                <span className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0 w-56">
+                  <Clock className="w-3 h-3 flex-shrink-0" />
+                  {r.source ?? (r.officialRate != null ? 'Manual' : 'Sin configurar')}
                 </span>
               </div>
             ))}
@@ -607,6 +634,7 @@ function ParentsSection() {
 const AUDIT_ACTION_LABELS = {
   'config.update': 'Actualizó configuración',
   'rates.update': 'Actualizó aranceles',
+  'rates.fetch-official': 'Actualizó aranceles desde ARCA',
   'professional.verify': 'Verificó profesional',
   'professional.unverify': 'Quitó verificación',
   'subscription.activate': 'Activó suscripción',
