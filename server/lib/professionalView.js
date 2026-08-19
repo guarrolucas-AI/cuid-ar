@@ -18,6 +18,7 @@ export function toProfessionalView(pro, viewerSubscribed) {
     hourlyRate: pro.hourlyRate,
     verified: pro.verified,
     photoUrl: pro.photoUrl ?? null,
+    ...(pro.distanceKm != null && { distanceKm: Math.round(pro.distanceKm * 10) / 10 }),
   }
 
   if (!viewerSubscribed) return base

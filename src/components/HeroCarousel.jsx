@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Baby, GraduationCap, Heart, Users, Sparkles } from 'lucide-react'
 
 const slides = [
@@ -113,12 +114,12 @@ export default function HeroCarousel() {
 
           {/* CTAs */}
           <div className="flex flex-wrap gap-4">
-            <a
-              href="#registro"
+            <Link
+              to="/buscar"
               className="px-8 py-4 bg-white text-gray-800 font-bold rounded-full hover:bg-gray-50 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 text-base"
             >
               Busco un Profesional
-            </a>
+            </Link>
             <a
               href="#registro"
               className="px-8 py-4 bg-white/20 text-white font-bold rounded-full border-2 border-white/50 hover:bg-white/30 transition-all backdrop-blur-sm text-base"

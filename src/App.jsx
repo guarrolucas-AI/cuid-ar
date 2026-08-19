@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import LegalPage from './pages/LegalPage'
+import SearchPage from './pages/SearchPage'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password"  element={<ResetPasswordPage />} />
           <Route path="/legal/:slug"     element={<LegalPage />} />
+          <Route path="/buscar"          element={<SearchPage />} />
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <DashboardPage />

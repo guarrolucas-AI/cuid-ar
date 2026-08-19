@@ -5,18 +5,26 @@ import crypto from 'crypto'
 import { prisma } from '../lib/prisma.js'
 import { sendEmail, tpl } from '../lib/email.js'
 import { auth } from '../middleware/auth.js'
+import { geocodeAddress } from '../lib/geocode.js'
 
 const router = Router()
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, role, name, phone, zone, category, hourlyRate, address, lat, lng } = req.body
+    const {
+      email, password, role, name, phone, zone, category, hourlyRate,
+      address, travelRadiusKm, maxDistanceKm,
+    } = req.body
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return res.status(409).json({ error: 'El email ya está registrado' })
 
     const hashed = await bcrypt.hash(password, 10)
+
+    // El backend calcula lat/lng a partir de la dirección cargada — nunca
+    // se confía en coordenadas que mande el cliente.
+    const coords = address ? await geocodeAddress(address) : null
 
     const user = await prisma.user.create({
       data: {
@@ -25,12 +33,23 @@ router.post('/register', async (req, res) => {
         role,
         ...(role === 'profesional' && {
           professional: {
-            create: { name, phone, zone, category, hourlyRate: parseFloat(hourlyRate) },
+            create: {
+              name, phone, zone, category, hourlyRate: parseFloat(hourlyRate),
+              address: address || null,
+              lat: coords?.lat ?? null,
+              lng: coords?.lng ?? null,
+              travelRadiusKm: travelRadiusKm ? parseFloat(travelRadiusKm) : 15,
+            },
           },
         }),
         ...(role === 'padre' && {
           parent: {
-            create: { name, phone, address, lat: lat ? parseFloat(lat) : null, lng: lng ? parseFloat(lng) : null },
+            create: {
+              name, phone, address,
+              lat: coords?.lat ?? null,
+              lng: coords?.lng ?? null,
+              maxDistanceKm: maxDistanceKm ? parseFloat(maxDistanceKm) : 15,
+            },
           },
         }),
       },

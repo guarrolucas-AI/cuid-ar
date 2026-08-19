@@ -14,13 +14,15 @@ const CATEGORIES = [
   { value: 'limpieza',    label: 'Limpieza del Hogar', icon: Sparkles },
 ]
 
+const RADIUS_OPTIONS = ['5', '10', '15', '20', '30', '50']
+
 const DEFAULTS = {
   email: '', password: '', confirmPassword: '',
   role: '', name: '', phone: '',
   // profesional
-  zone: '', category: '', hourlyRate: '',
+  zone: '', category: '', hourlyRate: '', travelRadiusKm: '15',
   // padre
-  address: '',
+  address: '', maxDistanceKm: '15',
 }
 
 const VALID_ROLES = ['padre', 'profesional']
@@ -186,6 +188,24 @@ export default function RegisterPage() {
                       placeholder="Ej: 5900" className={inputClass} />
                   </div>
                 </div>
+
+                <div>
+                  <label className={labelClass}>Tu dirección exacta</label>
+                  <input type="text" required value={form.address}
+                    onChange={(e) => set('address', e.target.value)}
+                    placeholder="Ej: Av. Corrientes 1234, CABA" className={inputClass} />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Nunca se muestra a otros usuarios — solo la usamos para calcular la distancia a las familias.
+                  </p>
+                </div>
+
+                <div>
+                  <label className={labelClass}>¿Hasta cuántos km te trasladás a trabajar?</label>
+                  <select value={form.travelRadiusKm} onChange={(e) => set('travelRadiusKm', e.target.value)}
+                    className={inputClass}>
+                    {RADIUS_OPTIONS.map((r) => <option key={r} value={r}>Hasta {r} km</option>)}
+                  </select>
+                </div>
               </div>
             )}
 
@@ -198,6 +218,16 @@ export default function RegisterPage() {
                   <input type="text" required value={form.address}
                     onChange={(e) => set('address', e.target.value)}
                     placeholder="Ej: Palermo, CABA" className={inputClass} />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Nunca se muestra a otros usuarios — solo la usamos para calcular la distancia a los profesionales.
+                  </p>
+                </div>
+                <div>
+                  <label className={labelClass}>¿Hasta cuántos km aceptás que se traslade el profesional?</label>
+                  <select value={form.maxDistanceKm} onChange={(e) => set('maxDistanceKm', e.target.value)}
+                    className={inputClass}>
+                    {RADIUS_OPTIONS.map((r) => <option key={r} value={r}>Hasta {r} km</option>)}
+                  </select>
                 </div>
               </div>
             )}

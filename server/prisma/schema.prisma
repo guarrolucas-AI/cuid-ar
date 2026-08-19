@@ -32,6 +32,10 @@ model Professional {
   available       Boolean          @default(true)
   photoUrl        String?
   certifications  String[]         @default([])
+  address         String?
+  lat             Float?
+  lng             Float?
+  travelRadiusKm  Float?           @default(15)
   contactRequests ContactRequest[]
 }
 
@@ -43,6 +47,7 @@ model Parent {
   address         String
   lat             Float?
   lng             Float?
+  maxDistanceKm   Float?           @default(15)
   contactRequests ContactRequest[]
 }
 
