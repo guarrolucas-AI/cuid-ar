@@ -1,8 +1,11 @@
 import { Router } from 'express'
+import multer from 'multer'
 import { prisma } from '../lib/prisma.js'
 import { auth } from '../middleware/auth.js'
+import { uploadProfilePhoto } from '../lib/storage.js'
 
 const router = Router()
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
 
 // GET /api/professional/me
 router.get('/me', auth, async (req, res) => {
@@ -33,6 +36,23 @@ router.patch('/me', auth, async (req, res) => {
     res.json(updated)
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/professional/photo — sube/reemplaza la foto de perfil (store
+// público de Vercel Blob, ver server/lib/storage.js). Campo del form:
+// "photo".
+router.post('/photo', auth, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Falta el archivo' })
+    const url = await uploadProfilePhoto(req.user.id, req.file.buffer, req.file.mimetype)
+    const updated = await prisma.professional.update({
+      where: { userId: req.user.id },
+      data: { photoUrl: url },
+    })
+    res.json(updated)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
   }
 })
 

@@ -158,6 +158,11 @@ export default function DashboardParent({ user, profile: init }) {
           </p>
           {results.map(pro => (
             <div key={pro.userId} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {pro.photoUrl
+                  ? <img src={pro.photoUrl} alt={pro.name} className="w-full h-full object-cover" />
+                  : <span className="font-heading font-bold text-teal-500 text-lg">{pro.name?.[0]?.toUpperCase()}</span>}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="font-heading font-bold text-gray-800">{pro.name}</h3>

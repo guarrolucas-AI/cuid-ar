@@ -93,6 +93,13 @@ model Message {
   conversationId String
   senderId       String
   body           String
+  // Adjunto opcional (foto o PDF), guardado en el store privado de Vercel
+  // Blob. attachmentPathname es la clave dentro del store — nunca se
+  // guarda ni se expone una URL pública, la descarga siempre pasa por
+  // /api/chat/attachments/:pathname que valida membership de la conversación.
+  attachmentPathname String?
+  attachmentType     String?
+  attachmentName     String?
   createdAt      DateTime     @default(now())
 }
 

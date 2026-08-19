@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { MessageCircle, Send, X, CheckCircle2, Circle, Trash2, ShieldCheck } from 'lucide-react'
+import { MessageCircle, Send, X, CheckCircle2, Circle, Trash2, ShieldCheck, Paperclip, FileText, Download, RefreshCw } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 const authHeaders = () => ({
@@ -68,7 +68,9 @@ export default function ChatPanel({ userId, openConversationId, onOpened }) {
                       )}
                     </div>
                     <p className="text-xs text-gray-400 truncate mt-1 max-w-xs">
-                      {c.lastMessage ? c.lastMessage.body : 'Todavía no hay mensajes'}
+                      {!c.lastMessage
+                        ? 'Todavía no hay mensajes'
+                        : c.lastMessage.body || (c.lastMessage.attachmentPathname ? '📎 Adjunto' : '')}
                     </p>
                   </div>
                 </button>
@@ -81,11 +83,60 @@ export default function ChatPanel({ userId, openConversationId, onOpened }) {
   )
 }
 
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const ATTACHMENT_ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf'
+
+// Los adjuntos del chat viven en un store PRIVADO de Vercel Blob — no hay
+// URL pública para pegar en un <img src>. Hay que pedirlo con el token de
+// auth y armar un blob: URL local para mostrarlo/descargarlo.
+function Attachment({ m, mine }) {
+  const [blobUrl, setBlobUrl] = useState(null)
+  const [error, setError] = useState(false)
+  const isImage = m.attachmentType?.startsWith('image/')
+
+  useEffect(() => {
+    let revoke = null
+    let cancelled = false
+    fetch(`${API_BASE}/api/chat/attachments?pathname=${encodeURIComponent(m.attachmentPathname)}`, { headers: authHeaders() })
+      .then(res => { if (!res.ok) throw new Error(); return res.blob() })
+      .then(blob => {
+        if (cancelled) return
+        const url = URL.createObjectURL(blob)
+        revoke = url
+        setBlobUrl(url)
+      })
+      .catch(() => !cancelled && setError(true))
+    return () => { cancelled = true; if (revoke) URL.revokeObjectURL(revoke) }
+  }, [m.attachmentPathname])
+
+  if (error) return <p className="text-xs italic opacity-70">No se pudo cargar el adjunto</p>
+  if (!blobUrl) return <div className="w-40 h-28 rounded-lg bg-black/10 animate-pulse" />
+
+  if (isImage) {
+    return (
+      <a href={blobUrl} target="_blank" rel="noreferrer">
+        <img src={blobUrl} alt={m.attachmentName ?? 'adjunto'} className="max-w-[220px] max-h-[220px] rounded-lg object-cover" />
+      </a>
+    )
+  }
+
+  return (
+    <a href={blobUrl} download={m.attachmentName ?? 'archivo.pdf'}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${mine ? 'bg-white/15 text-white' : 'bg-gray-50 text-gray-700 border border-gray-100'}`}>
+      <FileText className="w-4 h-4 flex-shrink-0" />
+      <span className="truncate max-w-[140px]">{m.attachmentName ?? 'archivo.pdf'}</span>
+      <Download className="w-3.5 h-3.5 flex-shrink-0" />
+    </a>
+  )
+}
+
 function ConversationThread({ id, userId, onBack, onChanged }) {
   const [data, setData] = useState(null)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
   const bottomRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   const load = useCallback(() => {
     fetch(`${API_BASE}/api/chat/conversations/${id}/messages`, { headers: authHeaders() })
@@ -118,6 +169,29 @@ function ConversationThread({ id, userId, onBack, onChanged }) {
       onChanged?.()
     } catch { /* el próximo poll retoma el estado real */ }
     setSending(false)
+  }
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > MAX_ATTACHMENT_BYTES) { alert('El archivo no puede superar 10MB'); return }
+    setUploadingFile(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch(`${API_BASE}/api/chat/conversations/${id}/attachments`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: form,
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      load()
+      onChanged?.()
+    } catch (err) {
+      alert(err.message)
+    }
+    setUploadingFile(false)
   }
 
   const toggleAgree = async () => {
@@ -158,7 +232,8 @@ function ConversationThread({ id, userId, onBack, onChanged }) {
           return (
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm ${mine ? 'bg-teal-500 text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-sm'}`}>
-                {m.body}
+                {m.attachmentPathname && <Attachment m={m} mine={mine} />}
+                {m.body && <p className={m.attachmentPathname ? 'mt-1' : ''}>{m.body}</p>}
                 <div className={`text-[10px] mt-1 ${mine ? 'text-teal-100' : 'text-gray-400'}`}>
                   {new Date(m.createdAt).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' })}
                 </div>
@@ -189,6 +264,12 @@ function ConversationThread({ id, userId, onBack, onChanged }) {
           <p className="text-xs text-amber-500">Esperando la confirmación de la otra parte.</p>
         )}
         <form onSubmit={send} className="flex gap-2">
+          <input ref={fileInputRef} type="file" accept={ATTACHMENT_ACCEPT} className="hidden" onChange={handleFile} />
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingFile}
+            className="flex items-center justify-center w-10 h-10 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 disabled:opacity-50 flex-shrink-0"
+            title="Adjuntar foto o PDF">
+            {uploadingFile ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+          </button>
           <input value={text} onChange={e => setText(e.target.value)} placeholder="Escribí un mensaje…"
             className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
           <button type="submit" disabled={sending || !text.trim()}

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle, Camera } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import ChatPanel from './ChatPanel'
 
@@ -51,7 +51,9 @@ export default function DashboardProfessional({ user, professional: init }) {
 
       {/* Header */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-4">
+          <PhotoUpload pro={pro} setPro={setPro} notify={notify} />
+          <div>
           <h2 className="font-heading text-2xl font-bold text-gray-800">{pro.name}</h2>
           <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -66,6 +68,7 @@ export default function DashboardProfessional({ user, professional: init }) {
                   <Lock className="w-3 h-3"/>Sin suscripción
                 </span>
             }
+          </div>
           </div>
         </div>
         {pro.verified
@@ -126,6 +129,58 @@ export default function DashboardProfessional({ user, professional: init }) {
         </>
       )}
     </div>
+  )
+}
+
+function PhotoUpload({ pro, setPro, notify }) {
+  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef(null)
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('photo', file)
+      const res = await fetch(`${API_BASE}/api/professional/photo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: form,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setPro((p) => ({ ...p, photoUrl: data.photoUrl }))
+      notify('Foto de perfil actualizada')
+    } catch (err) {
+      notify(err.message, false)
+    }
+    setUploading(false)
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => inputRef.current?.click()}
+      disabled={uploading}
+      className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-sm flex-shrink-0 group"
+      title="Cambiar foto de perfil"
+    >
+      {pro.photoUrl
+        ? <img src={pro.photoUrl} alt={pro.name} className="w-full h-full object-cover" />
+        : <div className="w-full h-full flex items-center justify-center text-gray-300"><User className="w-7 h-7" /></div>
+      }
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <Camera className="w-5 h-5 text-white" />
+      </div>
+      {uploading && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <RefreshCw className="w-5 h-5 text-white animate-spin" />
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
+    </button>
   )
 }
 
