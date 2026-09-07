@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle, Camera, Zap, Briefcase, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle, Camera, Zap, Briefcase, ChevronDown, ChevronUp, FileText } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import ChatPanel from './ChatPanel'
+import NotificationBell from './NotificationBell'
+import AlertasConfig from './AlertasConfig'
+import ProfileProgress from './ProfileProgress'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -33,6 +36,19 @@ export default function DashboardProfessional({ user, professional: init }) {
   const [jobPosts, setJobPosts]   = useState([])
   const [jobsOpen, setJobsOpen]   = useState(false)
   const [dutyLoading, setDutyLoading] = useState(false)
+
+  const profileRef = useRef(null)
+  const rateRef    = useRef(null)
+
+  const scrollTo = (section) => {
+    if (section === 'profile') profileRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (section === 'rate')    rateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const openJobsSection = () => {
+    setJobsOpen(true)
+    setTimeout(() => document.getElementById('jobs-section')?.scrollIntoView({ behavior: 'smooth' }), 100)
+  }
 
   const patch = async (body) => {
     const res = await fetch(`${API_BASE}/api/professional/me`, {
@@ -122,14 +138,17 @@ export default function DashboardProfessional({ user, professional: init }) {
           </div>
           </div>
         </div>
-        {pro.verified
-          ? <div className="flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full border border-teal-200 flex-shrink-0">
-              <ShieldCheck className="w-5 h-5" /><span className="text-sm font-semibold">Verificado</span>
-            </div>
-          : <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-full border border-amber-200 flex-shrink-0">
-              <ShieldX className="w-5 h-5" /><span className="text-sm font-semibold">Pendiente de verificación</span>
-            </div>
-        }
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {subscribed && <NotificationBell onViewJob={openJobsSection} />}
+          {pro.verified
+            ? <div className="flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full border border-teal-200">
+                <ShieldCheck className="w-5 h-5" /><span className="text-sm font-semibold">Verificado</span>
+              </div>
+            : <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-full border border-amber-200">
+                <ShieldX className="w-5 h-5" /><span className="text-sm font-semibold">Pendiente</span>
+              </div>
+          }
+        </div>
       </div>
 
       {/* Pantalla de pago si no tiene suscripción */}
@@ -138,6 +157,9 @@ export default function DashboardProfessional({ user, professional: init }) {
       {/* Contenido solo para suscriptos */}
       {subscribed && (
         <>
+          {/* Nivel de Perfil */}
+          <ProfileProgress pro={pro} onScrollTo={scrollTo} />
+
           {/* Disponibilidad */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 className="font-heading font-bold text-gray-800 mb-4">Disponibilidad</h3>
@@ -191,8 +213,11 @@ export default function DashboardProfessional({ user, professional: init }) {
             </div>
           </div>
 
+          {/* Alertas de Trabajo */}
+          <AlertasConfig />
+
           {/* Tablero de búsquedas activas */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div id="jobs-section" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <button
               onClick={() => setJobsOpen((v) => !v)}
               className="w-full flex items-center justify-between gap-3 p-5 text-left hover:bg-gray-50 transition-colors"
@@ -256,10 +281,14 @@ export default function DashboardProfessional({ user, professional: init }) {
           <ChatPanel userId={user.id} openConversationId={openConversationId} onOpened={() => setOpenConversationId(null)} />
 
           {/* Mi perfil */}
-          <ProfileForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+          <div ref={profileRef}>
+            <ProfileForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+          </div>
 
           {/* Tarifa */}
-          <RateForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+          <div ref={rateRef}>
+            <RateForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
+          </div>
         </>
       )}
     </div>
@@ -445,7 +474,7 @@ function ContactRequests({ onOpenChat }) {
 }
 
 function ProfileForm({ pro, setPro, patch, notify }) {
-  const [form, setForm] = useState({ name: pro.name, phone: pro.phone, zone: pro.zone, categories: pro.categories ?? [] })
+  const [form, setForm] = useState({ name: pro.name, phone: pro.phone, zone: pro.zone, categories: pro.categories ?? [], bio: pro.bio ?? '' })
   const [saving, setSaving] = useState(false)
   const [catError, setCatError] = useState('')
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -504,6 +533,20 @@ function ProfileForm({ pro, setPro, patch, notify }) {
             })}
           </div>
           {catError && <p className="text-xs text-red-500 mt-1.5">{catError}</p>}
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+            <FileText className="w-3.5 h-3.5"/>Biografía y experiencia
+          </label>
+          <textarea
+            value={form.bio}
+            onChange={e => set('bio', e.target.value)}
+            placeholder="Contá tu experiencia, formación y lo que te diferencia como profesional…"
+            rows={3}
+            maxLength={500}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+          />
+          <p className="text-xs text-gray-400 mt-1">{form.bio.length}/500</p>
         </div>
         <button type="submit" disabled={saving}
           className="flex items-center gap-2 px-5 py-2.5 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 text-sm">

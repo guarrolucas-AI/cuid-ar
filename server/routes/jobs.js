@@ -34,6 +34,29 @@ router.post('/', auth, async (req, res) => {
         notes: notes ?? null,
       },
     })
+
+    // Disparar alertas a profesionales con config activa para esta zona+categoría
+    try {
+      const matching = await prisma.professionalAlertConfig.findMany({
+        where: { active: true, zones: { has: zone }, categories: { has: category } },
+      })
+      if (matching.length > 0) {
+        const catLabel  = CAT_LABELS[category] ?? category
+        const zoneLabel = zone.replace('_', ' ')
+        await prisma.notification.createMany({
+          data: matching.map((cfg) => ({
+            professionalId: cfg.professionalId,
+            type:           'job_alert',
+            title:          `¡Nueva búsqueda de ${catLabel} cerca de tu zona!`,
+            body:           `Una familia en ${zoneLabel} busca profesional. ${schedule} · ${modality}.`,
+            jobPostId:      job.id,
+          })),
+        })
+      }
+    } catch (notifErr) {
+      console.error('Notification dispatch error:', notifErr.message)
+    }
+
     res.status(201).json(job)
   } catch (err) {
     res.status(500).json({ error: err.message })

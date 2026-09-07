@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { CAT_STYLES, getCatStyle } from '../lib/categoryStyles'
 import GuardRequestModal from '../components/GuardRequestModal'
 import PublishJobModal from '../components/PublishJobModal'
+import PreselectionGuideToast, { usePreselectionGuide } from '../components/PreselectionGuideToast'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -170,6 +171,13 @@ export default function SearchPage() {
   const [guardTarget, setGuardTarget]   = useState(null)
   const [publishOpen, setPublishOpen]   = useState(false)
   const { preselected, toggle: togglePreselect, isSelected } = usePreselection()
+  const { visible: guideVisible, trigger: triggerGuide, dismiss: dismissGuide } = usePreselectionGuide()
+
+  const handlePreselect = (pro) => {
+    const wasSelected = isSelected(pro.userId)
+    togglePreselect(pro)
+    if (!wasSelected) triggerGuide()
+  }
 
   useEffect(() => {
     if (geoStatus === 'idle' || geoStatus === 'asking') return
@@ -414,7 +422,7 @@ export default function SearchPage() {
                   {/* Acciones */}
                   <div className="flex sm:flex-col gap-2 flex-shrink-0 sm:items-stretch">
                     <button
-                      onClick={() => togglePreselect(pro)}
+                      onClick={() => handlePreselect(pro)}
                       title={saved ? 'Quitar de preseleccionados' : 'Preseleccionar'}
                       className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm border-2 transition-all ${
                         saved
@@ -490,6 +498,13 @@ export default function SearchPage() {
           <Plus className="w-5 h-5" /> Publicar búsqueda
         </button>
       )}
+
+      {/* Toast guía de preselección (primera vez) */}
+      <PreselectionGuideToast
+        visible={guideVisible}
+        onDismiss={dismissGuide}
+        onOpenDrawer={() => setDrawerOpen(true)}
+      />
     </div>
   )
 }

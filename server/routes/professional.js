@@ -21,7 +21,7 @@ router.get('/me', auth, async (req, res) => {
 // PATCH /api/professional/me
 router.patch('/me', auth, async (req, res) => {
   try {
-    const { available, hourlyRate, name, phone, zone, categories } = req.body
+    const { available, hourlyRate, name, phone, zone, categories, bio } = req.body
     if (categories !== undefined && (!Array.isArray(categories) || categories.length === 0)) {
       return res.status(400).json({ error: 'Elegí al menos una especialidad' })
     }
@@ -34,6 +34,7 @@ router.patch('/me', auth, async (req, res) => {
         ...(phone      && { phone }),
         ...(zone       && { zone }),
         ...(categories && { categories }),
+        ...(bio        !== undefined && { bio: bio || null }),
       },
     })
     res.json(updated)
@@ -100,6 +101,46 @@ router.get('/notifications', auth, async (req, res) => {
       parent: { name: r.parent.name },
       conversationId: conversationByParent[r.parentId] ?? null,
     })))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/professional/alert-config
+router.get('/alert-config', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'profesional')
+      return res.status(403).json({ error: 'Solo para profesionales' })
+    const config = await prisma.professionalAlertConfig.findUnique({
+      where: { professionalId: req.user.id },
+    })
+    res.json(config ?? { zones: [], categories: [], active: false })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /api/professional/alert-config
+router.patch('/alert-config', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'profesional')
+      return res.status(403).json({ error: 'Solo para profesionales' })
+    const { zones, categories, active } = req.body
+    const config = await prisma.professionalAlertConfig.upsert({
+      where: { professionalId: req.user.id },
+      create: {
+        professionalId: req.user.id,
+        zones:      Array.isArray(zones)      ? zones      : [],
+        categories: Array.isArray(categories) ? categories : [],
+        active:     active !== false,
+      },
+      update: {
+        ...(zones      !== undefined && { zones }),
+        ...(categories !== undefined && { categories }),
+        ...(active     !== undefined && { active }),
+      },
+    })
+    res.json(config)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

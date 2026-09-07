@@ -44,10 +44,13 @@ model Professional {
   address         String?
   lat             Float?
   lng             Float?
+  bio             String?
   travelRadiusKm  Float?           @default(15)
   contactRequests ContactRequest[]
   conversations   Conversation[]
   applications    JobApplication[]
+  alertConfig     ProfessionalAlertConfig?
+  notifications   Notification[]
 }
 
 model Parent {
@@ -180,6 +183,28 @@ model JobApplication {
   createdAt      DateTime     @default(now())
 
   @@unique([jobPostId, professionalId])
+}
+
+model ProfessionalAlertConfig {
+  id             String       @id @default(uuid())
+  professional   Professional @relation(fields: [professionalId], references: [userId])
+  professionalId String       @unique
+  zones          String[]     @default([])
+  categories     String[]     @default([])
+  active         Boolean      @default(true)
+  updatedAt      DateTime     @updatedAt
+}
+
+model Notification {
+  id             String       @id @default(uuid())
+  professional   Professional @relation(fields: [professionalId], references: [userId])
+  professionalId String
+  type           String       @default("job_alert")
+  title          String
+  body           String
+  jobPostId      String?
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
 }
 
 model AdminAuditLog {

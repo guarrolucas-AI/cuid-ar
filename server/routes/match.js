@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma.js'
 import { auth, optionalAuth } from '../middleware/auth.js'
 import { sendEmail, tpl } from '../lib/email.js'
-import { toProfessionalView } from '../lib/professionalView.js'
+import { toProfessionalView, calcProfileScore } from '../lib/professionalView.js'
 
 const router = Router()
 
@@ -104,8 +104,13 @@ router.get('/search', optionalAuth, async (req, res) => {
           ...(maxRate      && { hourlyRate: { lte: parseFloat(maxRate) } }),
           ...(onDutyFilter && { onDuty: true }),
         },
-        orderBy: [{ onDuty: 'desc' }, { hourlyRate: 'asc' }],
-        take: DEFAULT_RESULT_LIMIT,
+          take: DEFAULT_RESULT_LIMIT,
+      })
+      professionals.sort((a, b) => {
+        if (a.onDuty !== b.onDuty) return b.onDuty ? 1 : -1
+        const psDiff = calcProfileScore(b) - calcProfileScore(a)
+        if (psDiff !== 0) return psDiff
+        return a.hourlyRate - b.hourlyRate
       })
       return res.json(professionals.map((pro) => toProfessionalView(pro, viewerSubscribed, pickOfficialRate(pro, category, officialRates))))
     }
@@ -145,6 +150,13 @@ router.get('/search', optionalAuth, async (req, res) => {
       if (maxDistNum != null && pro.distanceKm > maxDistNum) return false
       return true
     }).slice(0, DEFAULT_RESULT_LIMIT)
+
+    inRange.sort((a, b) => {
+      if (a.onDuty !== b.onDuty) return b.onDuty ? 1 : -1
+      const psDiff = calcProfileScore(b) - calcProfileScore(a)
+      if (psDiff !== 0) return psDiff
+      return (a.distanceKm ?? 0) - (b.distanceKm ?? 0)
+    })
 
     res.json(inRange.map((pro) => toProfessionalView(pro, viewerSubscribed, pickOfficialRate(pro, category, officialRates))))
   } catch (err) {
