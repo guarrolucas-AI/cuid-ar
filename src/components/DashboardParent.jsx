@@ -1,7 +1,9 @@
-import { useState } from 'react'
-import { Search, MapPin, Tag, DollarSign, Bell, CheckCircle, ShieldCheck, Save, User, Phone, Lock, CreditCard, RefreshCw } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, MapPin, Tag, DollarSign, Bell, CheckCircle, ShieldCheck, Save, User, Phone, Lock, CreditCard, RefreshCw, Briefcase, Plus, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import ChatPanel from './ChatPanel'
+import PublishJobModal from './PublishJobModal'
+import { CAT_STYLES } from '../lib/categoryStyles'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -50,6 +52,32 @@ export default function DashboardParent({ user, profile: init }) {
   const [notified, setNotified] = useState({})
   const [toast,    notify]      = useToast()
   const [openConversationId, setOpenConversationId] = useState(null)
+  const [publishOpen, setPublishOpen] = useState(false)
+  const [myJobs, setMyJobs]           = useState([])
+  const [jobsOpen, setJobsOpen]       = useState(false)
+
+  const loadMyJobs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/jobs/mine`, { headers: authHeaders() })
+      setMyJobs(await res.json())
+    } catch {}
+  }
+
+  const toggleJobStatus = async (id, current) => {
+    const next = current === 'active' ? 'closed' : 'active'
+    try {
+      await fetch(`${API_BASE}/api/jobs/${id}`, {
+        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: next }),
+      })
+      setMyJobs((prev) => prev.map((j) => j.id === id ? { ...j, status: next } : j))
+      notify(next === 'active' ? 'Búsqueda activada' : 'Búsqueda cerrada')
+    } catch { notify('Error al actualizar', false) }
+  }
+
+  useEffect(() => {
+    if (jobsOpen && myJobs.length === 0) loadMyJobs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobsOpen])
 
   const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: v }))
 
@@ -204,7 +232,96 @@ export default function DashboardParent({ user, profile: init }) {
 
       {/* Mensajes */}
       <ChatPanel userId={user.id} openConversationId={openConversationId} onOpened={() => setOpenConversationId(null)} />
+
+      {/* Mis Búsquedas */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="flex items-center justify-between gap-3 p-5 border-b border-gray-100">
+          <button
+            onClick={() => setJobsOpen((v) => !v)}
+            className="flex items-center gap-2 font-heading font-bold text-gray-800 hover:text-blue-600 transition-colors"
+          >
+            <Briefcase className="w-5 h-5 text-blue-500" />
+            Mis Búsquedas
+            {jobsOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          </button>
+          <button
+            onClick={() => setPublishOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Publicar búsqueda
+          </button>
+        </div>
+
+        {jobsOpen && (
+          <div className="p-4 space-y-3">
+            {myJobs.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-6">Todavía no publicaste ninguna búsqueda.</p>
+            ) : (
+              myJobs.map((job) => {
+                const style = CAT_STYLES[job.category] ?? { bg: 'bg-slate-50', border: 'border-slate-200', badge: 'bg-slate-100 text-slate-600' }
+                return (
+                  <div key={job.id} className={`rounded-2xl border-2 ${style.border} ${style.bg} p-4 space-y-3`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="font-heading font-bold text-gray-800 text-sm">{job.categoryLabel}</p>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${job.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {job.status === 'active' ? 'Activa' : 'Cerrada'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">{job.zone} · {job.schedule} · {job.modality}</p>
+                        {job.days?.length > 0 && <p className="text-xs text-blue-600 mt-0.5">{job.days.join(', ')}</p>}
+                        <p className="text-xs text-gray-500 mt-1 font-semibold">{job.applicantCount} postulado{job.applicantCount !== 1 ? 's' : ''}</p>
+                      </div>
+                      <button
+                        onClick={() => toggleJobStatus(job.id, job.status)}
+                        className="text-xs font-semibold text-gray-500 hover:text-red-500 transition-colors flex-shrink-0 p-1"
+                        title={job.status === 'active' ? 'Cerrar búsqueda' : 'Reactivar'}
+                      >
+                        {job.status === 'active' ? <X className="w-4 h-4" /> : '↺'}
+                      </button>
+                    </div>
+
+                    {job.applicants?.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-gray-600">Profesionales postulados:</p>
+                        {job.applicants.map((a) => (
+                          <div key={a.applicationId} className="flex items-center gap-2 bg-white rounded-xl p-2.5 border border-gray-100">
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {a.photoUrl
+                                ? <img src={a.photoUrl} alt={a.name} className="w-full h-full object-cover" />
+                                : <span className="font-bold text-blue-500 text-xs">{a.name?.[0]?.toUpperCase()}</span>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-gray-800 leading-tight">{a.name}</p>
+                              <p className="text-xs text-gray-500">${Number(a.hourlyRate).toLocaleString('es-AR')}/hr</p>
+                            </div>
+                            {a.verified && <ShieldCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+      </div>
+
         </>
+      )}
+
+      {publishOpen && (
+        <PublishJobModal
+          onClose={() => setPublishOpen(false)}
+          onSuccess={(job) => {
+            setPublishOpen(false)
+            notify('Búsqueda publicada con éxito')
+            loadMyJobs()
+            if (!jobsOpen) setJobsOpen(true)
+          }}
+        />
       )}
     </div>
   )

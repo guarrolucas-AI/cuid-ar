@@ -38,6 +38,7 @@ model Professional {
   verified        Boolean          @default(false)
   hourlyRate      Float
   available       Boolean          @default(true)
+  onDuty          Boolean          @default(false)
   photoUrl        String?
   certifications  String[]         @default([])
   address         String?
@@ -46,6 +47,7 @@ model Professional {
   travelRadiusKm  Float?           @default(15)
   contactRequests ContactRequest[]
   conversations   Conversation[]
+  applications    JobApplication[]
 }
 
 model Parent {
@@ -59,6 +61,7 @@ model Parent {
   maxDistanceKm   Float?           @default(15)
   contactRequests ContactRequest[]
   conversations   Conversation[]
+  jobPosts        JobPost[]
 }
 
 model ContactRequest {
@@ -150,6 +153,35 @@ model ServiceRate {
 // Auditoría de acciones del admin (verificaciones, altas/bajas de
 // suscripción, cambios de aranceles y de configuración) — trazabilidad
 // de "quién hizo qué y cuándo" en el backoffice.
+model JobPost {
+  id           String           @id @default(uuid())
+  parent       Parent           @relation(fields: [parentId], references: [userId])
+  parentId     String
+  category     String
+  zone         String
+  days         String[]         @default([])
+  schedule     String
+  modality     String
+  requirements String[]         @default([])
+  notes        String?
+  status       String           @default("active")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  applications JobApplication[]
+}
+
+model JobApplication {
+  id             String       @id @default(uuid())
+  jobPost        JobPost      @relation(fields: [jobPostId], references: [id])
+  jobPostId      String
+  professional   Professional @relation(fields: [professionalId], references: [userId])
+  professionalId String
+  status         String       @default("pending")
+  createdAt      DateTime     @default(now())
+
+  @@unique([jobPostId, professionalId])
+}
+
 model AdminAuditLog {
   id         String   @id @default(uuid())
   adminEmail String

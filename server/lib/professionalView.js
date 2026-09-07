@@ -17,6 +17,7 @@ export function toProfessionalView(pro, viewerSubscribed, officialRate = null) {
     categories: pro.categories ?? [],
     hourlyRate: pro.hourlyRate,
     verified: pro.verified,
+    onDuty: pro.onDuty ?? false,
     photoUrl: pro.photoUrl ?? null,
     ...(pro.distanceKm != null && { distanceKm: Math.round(pro.distanceKm * 10) / 10 }),
   }

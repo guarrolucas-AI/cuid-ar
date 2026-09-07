@@ -59,6 +59,20 @@ router.post('/photo', auth, upload.single('photo'), async (req, res) => {
   }
 })
 
+// PATCH /api/professional/duty — activa/desactiva el modo "De Guardia"
+router.patch('/duty', auth, async (req, res) => {
+  try {
+    const { onDuty } = req.body
+    const updated = await prisma.professional.update({
+      where: { userId: req.user.id },
+      data: { onDuty: Boolean(onDuty) },
+    })
+    res.json({ onDuty: updated.onDuty })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/professional/notifications
 // La dirección y el teléfono del solicitante nunca se exponen acá (ni en
 // ningún endpoint público): son datos restringidos al uso interno del

@@ -73,7 +73,8 @@ router.get('/rates', async (req, res) => {
 // Sin coordenadas, cae al comportamiento anterior: ordenado por tarifa.
 router.get('/search', optionalAuth, async (req, res) => {
   try {
-    const { zone, category, maxRate } = req.query
+    const { zone, category, maxRate, onDuty } = req.query
+    const onDutyFilter = onDuty === 'true'
     let { lat, lng, maxDistanceKm } = req.query
 
     // Sin coordenadas en la URL: si hay un padre logueado con dirección
@@ -98,11 +99,12 @@ router.get('/search', optionalAuth, async (req, res) => {
           available: true,
           verified: true,
           user: { status: 'subscribed' },
-          ...(zone     && { zone }),
-          ...(category && { categories: { has: category } }),
-          ...(maxRate  && { hourlyRate: { lte: parseFloat(maxRate) } }),
+          ...(zone         && { zone }),
+          ...(category     && { categories: { has: category } }),
+          ...(maxRate      && { hourlyRate: { lte: parseFloat(maxRate) } }),
+          ...(onDutyFilter && { onDuty: true }),
         },
-        orderBy: { hourlyRate: 'asc' },
+        orderBy: [{ onDuty: 'desc' }, { hourlyRate: 'asc' }],
         take: DEFAULT_RESULT_LIMIT,
       })
       return res.json(professionals.map((pro) => toProfessionalView(pro, viewerSubscribed, pickOfficialRate(pro, category, officialRates))))
@@ -130,9 +132,10 @@ router.get('/search', optionalAuth, async (req, res) => {
         AND u."status" = 'subscribed'
         AND p."lat" IS NOT NULL AND p."lng" IS NOT NULL
         ${zone ? Prisma.sql`AND p."zone" = ${zone}` : Prisma.empty}
-        ${category ? Prisma.sql`AND ${category} = ANY(p."categories")` : Prisma.empty}
-        ${maxRate ? Prisma.sql`AND p."hourlyRate" <= ${parseFloat(maxRate)}` : Prisma.empty}
-      ORDER BY "distanceKm" ASC
+        ${category     ? Prisma.sql`AND ${category} = ANY(p."categories")` : Prisma.empty}
+        ${maxRate      ? Prisma.sql`AND p."hourlyRate" <= ${parseFloat(maxRate)}` : Prisma.empty}
+        ${onDutyFilter ? Prisma.sql`AND p."onDuty" = true` : Prisma.empty}
+      ORDER BY p."onDuty" DESC, "distanceKm" ASC
       LIMIT ${DEFAULT_RESULT_LIMIT * 3}
     `
 
@@ -181,6 +184,60 @@ router.post('/notify', auth, async (req, res) => {
     const label = CATEGORY_LABELS[category] ?? category
     const { subject, html } = tpl.notify(professional.name, parent.name, parent.phone, parent.address, label)
     await sendEmail({ to: professional.user.email, subject, html })
+
+    res.json({ success: true, conversationId: conversation.id })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/match/guard-request — solicitud estructurada de guardia urgente.
+// Crea un ContactRequest + Conversation (igual que /notify) y además inserta
+// un mensaje pre-formateado con las opciones seleccionadas por la familia.
+router.post('/guard-request', auth, async (req, res) => {
+  try {
+    if (req.user.status !== 'subscribed')
+      return res.status(403).json({ error: 'Se requiere suscripción activa' })
+
+    const { professionalId, category, startTime, duration, reason } = req.body
+    if (!professionalId || !category || !startTime || !duration || !reason)
+      return res.status(400).json({ error: 'Faltan campos obligatorios' })
+
+    const [professional, parent] = await Promise.all([
+      prisma.professional.findUnique({ where: { userId: professionalId }, include: { user: true } }),
+      prisma.parent.findUnique({ where: { userId: req.user.id } }),
+    ])
+    if (!professional || !parent) return res.status(404).json({ error: 'Datos no encontrados' })
+    if (!professional.verified || professional.user.status !== 'subscribed')
+      return res.status(403).json({ error: 'Profesional no disponible' })
+
+    await prisma.contactRequest.create({
+      data: { professionalId: professional.userId, parentId: parent.userId, category },
+    })
+
+    const conversation = await prisma.conversation.upsert({
+      where: { professionalId_parentId: { professionalId: professional.userId, parentId: parent.userId } },
+      update: {},
+      create: { professionalId: professional.userId, parentId: parent.userId, category },
+    })
+
+    const START_LABELS     = { immediate: 'Inmediato', two_hours: 'En 2 horas', night_shift: 'Turno Noche' }
+    const DURATION_LABELS  = { by_hour: 'Por hora', half_day: 'Medio día', full_day: 'Jornada completa' }
+    const REASON_LABELS    = { work_surprise: 'Imprevisto laboral', replacement: 'Reemplazo de emergencia', punctual: 'Atención puntual' }
+
+    const body = [
+      '🚨 SOLICITUD DE GUARDIA URGENTE',
+      '',
+      `⏰ Inicio requerido: ${START_LABELS[startTime] ?? startTime}`,
+      `⏳ Duración estimada: ${DURATION_LABELS[duration] ?? duration}`,
+      `📋 Motivo: ${REASON_LABELS[reason] ?? reason}`,
+      '',
+      '— Enviado automáticamente desde CUID_AR',
+    ].join('\n')
+
+    await prisma.message.create({
+      data: { conversationId: conversation.id, senderId: parent.userId, body },
+    })
 
     res.json({ success: true, conversationId: conversation.id })
   } catch (err) {

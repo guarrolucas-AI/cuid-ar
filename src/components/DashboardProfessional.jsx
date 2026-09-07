@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle, Camera } from 'lucide-react'
+import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle, Camera, Zap, Briefcase, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import ChatPanel from './ChatPanel'
 
@@ -30,6 +30,9 @@ export default function DashboardProfessional({ user, professional: init }) {
   const [pro,  setPro]  = useState(init)
   const [toast, notify] = useToast()
   const [openConversationId, setOpenConversationId] = useState(null)
+  const [jobPosts, setJobPosts]   = useState([])
+  const [jobsOpen, setJobsOpen]   = useState(false)
+  const [dutyLoading, setDutyLoading] = useState(false)
 
   const patch = async (body) => {
     const res = await fetch(`${API_BASE}/api/professional/me`, {
@@ -40,6 +43,52 @@ export default function DashboardProfessional({ user, professional: init }) {
   }
 
   const subscribed = user.status === 'subscribed'
+
+  const toggleDuty = async () => {
+    setDutyLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/professional/duty`, {
+        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ onDuty: !pro.onDuty }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      const data = await res.json()
+      setPro((p) => ({ ...p, onDuty: data.onDuty }))
+      notify(data.onDuty ? '¡Ahora estás De Guardia!' : 'Saliste del modo Guardia')
+    } catch (e) {
+      notify(e.message, false)
+    }
+    setDutyLoading(false)
+  }
+
+  const loadJobs = async () => {
+    try {
+      const zone = pro.zone ? `?zone=${pro.zone}` : ''
+      const res = await fetch(`${API_BASE}/api/jobs${zone}`, { headers: authHeaders() })
+      setJobPosts(await res.json())
+    } catch {}
+  }
+
+  const applyToJob = async (jobId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/jobs/${jobId}/apply`, {
+        method: 'POST', headers: authHeaders(),
+      })
+      const data = await res.json()
+      if (!res.ok) { notify(data.error, false); return }
+      notify('Postulación enviada con éxito')
+      setJobPosts((prev) => prev.map((j) => j.id === jobId ? { ...j, alreadyApplied: true } : j))
+    } catch { notify('Error al postularse', false) }
+  }
+
+  useEffect(() => {
+    if (jobsOpen && jobPosts.length === 0) loadJobs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobsOpen])
+
+  const CAT_LABELS_MAP = {
+    infantil: 'Cuidado Infantil', pedagogico: 'Apoyo Pedagógico',
+    salud: 'Salud Pediátrica', terapeutico: 'Cuidado Terapéutico', limpieza: 'Limpieza del Hogar',
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-5">
@@ -115,6 +164,89 @@ export default function DashboardProfessional({ user, professional: init }) {
                 {pro.available ? <><ToggleRight className="w-5 h-5"/>Activo</> : <><ToggleLeft className="w-5 h-5"/>Inactivo</>}
               </button>
             </div>
+
+            {/* Toggle De Guardia */}
+            <div className={`mt-4 p-4 rounded-2xl border-2 transition-all ${pro.onDuty ? 'border-green-300 bg-green-50' : 'border-gray-100 bg-gray-50'}`}>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                    <Zap className={`w-4 h-4 ${pro.onDuty ? 'text-green-600' : 'text-gray-400'}`} />
+                    {pro.onDuty ? 'Estás De Guardia hoy' : 'Disponibilidad Inmediata / Guardia'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {pro.onDuty ? 'Las familias te ven como "Disponible Hoy" y pueden enviarte solicitudes urgentes' : 'Activalo si estás disponible para atender hoy con urgencia'}
+                  </p>
+                </div>
+                <button
+                  onClick={toggleDuty}
+                  disabled={dutyLoading}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold text-sm transition-all flex-shrink-0 disabled:opacity-60 ${
+                    pro.onDuty ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  {pro.onDuty ? 'En Guardia' : 'Activar Guardia'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Tablero de búsquedas activas */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <button
+              onClick={() => setJobsOpen((v) => !v)}
+              className="w-full flex items-center justify-between gap-3 p-5 text-left hover:bg-gray-50 transition-colors"
+            >
+              <span className="flex items-center gap-2 font-heading font-bold text-gray-800">
+                <Briefcase className="w-5 h-5 text-blue-500" />
+                Búsquedas en tu zona
+              </span>
+              {jobsOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            </button>
+
+            {jobsOpen && (
+              <div className="border-t border-gray-100 p-4 space-y-3">
+                {jobPosts.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-6">No hay búsquedas activas en tu zona por el momento.</p>
+                ) : (
+                  jobPosts.map((job) => (
+                    <div key={job.id} className="rounded-2xl border-2 border-blue-100 bg-blue-50 p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-heading font-bold text-gray-800 text-sm">{job.categoryLabel}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {job.zone} · {job.schedule} · {job.modality}
+                          </p>
+                          {job.days?.length > 0 && (
+                            <p className="text-xs text-blue-600 mt-1">{job.days.join(', ')}</p>
+                          )}
+                          {job.requirements?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {job.requirements.map((r) => (
+                                <span key={r} className="text-xs bg-white text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">{r}</span>
+                              ))}
+                            </div>
+                          )}
+                          {job.notes && <p className="text-xs text-gray-500 mt-1 italic">{job.notes}</p>}
+                        </div>
+                        <span className="text-xs text-gray-400 flex-shrink-0">{job.applicantCount} postulado{job.applicantCount !== 1 ? 's' : ''}</span>
+                      </div>
+                      <button
+                        onClick={() => applyToJob(job.id)}
+                        disabled={job.alreadyApplied}
+                        className={`w-full py-2 rounded-xl text-sm font-semibold transition-colors ${
+                          job.alreadyApplied
+                            ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                      >
+                        {job.alreadyApplied ? '✓ Ya te postulaste' : 'Postularme'}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           {/* Consultas recibidas */}
