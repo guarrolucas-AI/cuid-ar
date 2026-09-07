@@ -36,8 +36,8 @@ export default function Footer() {
                 <Heart className="w-5 h-5 text-white fill-white" />
               </div>
               <span className="font-heading font-bold text-xl">
-                <span className="text-teal-400">CUID</span>
-                <span className="text-white">_AR</span>
+                <span className="text-teal-400">CuidAR</span>
+                <span className="text-white"> 360</span>
               </span>
             </a>
             <p className="text-sm leading-relaxed text-gray-400 max-w-xs mb-6">
@@ -125,7 +125,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-sm text-gray-500">© 2026 CUID_AR. Todos los derechos reservados.</p>
+          <p className="text-sm text-gray-500">© 2026 CuidAR 360. Todos los derechos reservados.</p>
           <p className="text-xs text-gray-600 flex items-center gap-1.5">
             Hecho con <Heart className="w-3 h-3 text-teal-500 fill-teal-500" /> en Buenos Aires
           </p>

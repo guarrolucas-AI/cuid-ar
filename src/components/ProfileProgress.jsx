@@ -36,7 +36,7 @@ const STEPS = [
   {
     key:    'verified',
     label:  'Documentación verificada',
-    hint:   'Enviá tu documentación al equipo CuidAR para ser verificado',
+    hint:   'Enviá tu documentación al equipo CuidAR 360 para ser verificado',
     icon:   ShieldCheck,
     check:  (pro) => !!pro.verified,
     action: null,

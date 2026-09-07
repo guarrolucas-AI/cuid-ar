@@ -51,7 +51,7 @@ export default function Nosotros() {
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
             En Argentina, el sector del cuidado doméstico históricamente fue marcado por la informalidad
-            y los precios arbitrarios. <strong className="text-gray-800">CUID_AR</strong> nace para cambiar
+            y los precios arbitrarios. <strong className="text-gray-800">CuidAR 360</strong> nace para cambiar
             esa realidad: construimos una red donde cada familia encuentra el cuidado que merece, y cada
             profesional obtiene el reconocimiento que su trabajo requiere.
           </p>

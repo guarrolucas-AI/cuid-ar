@@ -22,8 +22,8 @@ export default function Navbar() {
               <Heart className="w-5 h-5 text-white fill-white" />
             </div>
             <span className="font-heading font-bold text-xl">
-              <span className="text-teal-500">CUID</span>
-              <span className="text-gray-700">_AR</span>
+              <span className="text-teal-500">CuidAR</span>
+              <span className="text-gray-700"> 360</span>
             </span>
           </a>
 

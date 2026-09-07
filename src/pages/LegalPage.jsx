@@ -28,7 +28,7 @@ export default function LegalPage() {
               </div>
               <h1 className="font-heading text-2xl font-bold text-gray-800 mb-4">{title}</h1>
               <p className="text-gray-600 leading-relaxed">
-                Estamos redactando este documento junto a nuestro equipo legal, dado que CUID_AR maneja datos
+                Estamos redactando este documento junto a nuestro equipo legal, dado que CuidAR 360 maneja datos
                 sensibles (identidad, domicilio, cuidado de menores) y pagos entre usuarios. Va a estar publicado
                 acá antes del lanzamiento definitivo de la plataforma.
               </p>

@@ -157,7 +157,7 @@ export default function Aranceles() {
             salarial oficial de ARCA (ex AFIP) para Personal de Casas Particulares. Las demás categorías no tienen un
             nomenclador nacional único (dependen de cada obra social o colegio profesional) y se muestran &ldquo;a
             confirmar&rdquo; hasta que el equipo cargue una referencia. Los valores reales pueden variar según
-            experiencia, certificaciones y acuerdo entre las partes. CUID_AR actúa como plataforma intermediaria y no
+            experiencia, certificaciones y acuerdo entre las partes. CuidAR 360 actúa como plataforma intermediaria y no
             determina los honorarios finales.
           </p>
         </div>

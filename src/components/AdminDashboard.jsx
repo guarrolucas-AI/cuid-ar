@@ -116,7 +116,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div>
         <h1 className="font-heading text-3xl font-bold text-gray-800">Panel de Administración</h1>
-        <p className="text-sm text-gray-500 mt-1">Configuración global de la plataforma CUID_AR</p>
+        <p className="text-sm text-gray-500 mt-1">Configuración global de la plataforma CuidAR 360</p>
       </div>
 
       {/* Stats */}
