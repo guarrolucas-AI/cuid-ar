@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Heart, Instagram, Facebook, Linkedin, Mail, Phone, MapPin } from 'lucide-react'
+import { Isotipo } from '../lib/Isotipo'
 
 const servicios = [
   { label: 'Cuidado Infantil', href: '#servicios' },
@@ -31,13 +32,11 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="lg:col-span-2">
-            <a href="#inicio" className="flex items-center gap-2 mb-5">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white fill-white" />
-              </div>
-              <span className="font-heading font-bold text-xl">
-                <span className="text-teal-400">CuidAR</span>
-                <span className="text-white"> 360</span>
+            <a href="#inicio" className="flex items-center gap-2.5 mb-5">
+              <Isotipo size={34} variant="white" />
+              <span className="font-heading font-bold text-[1.2rem] tracking-tight leading-none">
+                <span style={{ color: '#F6F8F6' }}>CuidAR</span>
+                <span style={{ color: 'var(--cuidar-verde-300)' }}> 360</span>
               </span>
             </a>
             <p className="text-sm leading-relaxed text-gray-400 max-w-xs mb-6">

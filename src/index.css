@@ -2,17 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── CuidAR 360 Design Tokens ── */
+:root {
+  --cuidar-verde-institucional: #1F4D3A;
+  --cuidar-verde-900: #14201B;
+  --cuidar-verde-700: #1A4030;
+  --cuidar-verde-300: #9FB6A8;
+  --cuidar-agua-clara: #3FB7A6;
+  --cuidar-agua-soft: rgba(63, 183, 166, .18);
+  --cuidar-coral-humano: #D9544D;
+  --cuidar-coral-soft: #FBF2F1;
+  --cuidar-papel: #FFFFFF;
+  --cuidar-nieve: #F6F8F6;
+  --cuidar-borde: #E6EBE7;
+  --cuidar-gris-suave: #8E9995;
+  --cuidar-gris-medio: #5B6661;
+  --cuidar-texto: #4F5A55;
+  --cuidar-tinta: #2A332F;
+  --cuidar-shadow-overlay: 0 8px 32px rgba(20, 32, 27, .16);
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
   }
   body {
-    font-family: 'Montserrat', sans-serif;
-    color: #2D3748;
-    background-color: #ffffff;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    font-size: 15.5px;
+    line-height: 1.68;
+    color: var(--cuidar-texto);
+    background-color: var(--cuidar-nieve);
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Quicksand', sans-serif;
-    font-weight: 700;
+    font-family: 'Gabarito', system-ui, sans-serif;
+    font-weight: 600;
+    color: var(--cuidar-tinta);
+  }
+  /* Cifras monetarias siempre tabulares */
+  .tarifa, [class*="tarifa"] {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
   }
 }
