@@ -5,29 +5,21 @@ const values = [
     icon: ShieldCheck,
     title: 'Verificación y Confianza',
     desc: 'Todos los profesionales pasan por validación de identidad, antecedentes y certificaciones antes de ingresar a la red.',
-    iconColor: 'text-teal-500',
-    iconBg: 'bg-teal-50',
   },
   {
     icon: Scale,
     title: 'Precios Justos y Transparentes',
     desc: 'Aranceles basados en convenios colectivos vigentes (CNTCP, Colegios Profesionales de Bs.As.). Sin precios arbitrarios.',
-    iconColor: 'text-blue-500',
-    iconBg: 'bg-blue-50',
   },
   {
     icon: Star,
     title: 'Profesionalismo Real',
     desc: 'Combatimos la informalidad del sector conectando familias con profesionales registrados, habilitados y comprometidos.',
-    iconColor: 'text-amber-500',
-    iconBg: 'bg-amber-50',
   },
   {
     icon: TrendingUp,
     title: 'Mejora Continua',
     desc: 'Sistema de calificaciones bidireccional para que familias y profesionales crezcan y mejoren juntos.',
-    iconColor: 'text-emerald-500',
-    iconBg: 'bg-emerald-50',
   },
 ]
 
@@ -40,18 +32,21 @@ const stats = [
 
 export default function Nosotros() {
   return (
-    <section id="nosotros" className="py-24 bg-gray-50">
+    <section id="nosotros" className="py-24" style={{ background: 'var(--cuidar-nieve)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Header */}
         <div className="text-center mb-16">
-          <span className="text-teal-500 font-semibold text-sm uppercase tracking-widest">Nuestra Misión</span>
-          <h2 className="font-heading text-4xl lg:text-5xl font-bold text-gray-800 mt-3 mb-6">
-            Cuidado con <span className="text-teal-500">propósito</span>
+          <span className="block text-xs font-semibold uppercase mb-3"
+            style={{ color: 'var(--cuidar-verde-institucional)', letterSpacing: '0.18em' }}>
+            Nuestra Misión
+          </span>
+          <h2 className="font-heading font-bold mt-1 mb-5"
+            style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', color: 'var(--cuidar-tinta)', letterSpacing: '-0.015em' }}>
+            Cuidado con propósito
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--cuidar-gris-medio)', fontSize: '15.5px' }}>
             En Argentina, el sector del cuidado doméstico históricamente fue marcado por la informalidad
-            y los precios arbitrarios. <strong className="text-gray-800">CuidAR 360</strong> nace para cambiar
+            y los precios arbitrarios. <strong style={{ color: 'var(--cuidar-tinta)' }}>CuidAR 360</strong> nace para cambiar
             esa realidad: construimos una red donde cada familia encuentra el cuidado que merece, y cada
             profesional obtiene el reconocimiento que su trabajo requiere.
           </p>
@@ -60,24 +55,33 @@ export default function Nosotros() {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
           {stats.map((s) => (
-            <div key={s.label} className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-              <div className="font-heading text-4xl font-bold text-teal-500 mb-1">{s.number}</div>
-              <div className="text-sm text-gray-500 font-medium">{s.label}</div>
+            <div key={s.label} className="text-center p-6 border"
+              style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+              <div className="font-heading text-4xl font-bold mb-1"
+                style={{ color: 'var(--cuidar-verde-institucional)' }}>
+                {s.number}
+              </div>
+              <div className="text-sm font-medium" style={{ color: 'var(--cuidar-gris-suave)' }}>{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Value cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {values.map((item) => {
             const Icon = item.icon
             return (
-              <div key={item.title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className={`w-12 h-12 rounded-xl ${item.iconBg} flex items-center justify-center mb-4`}>
-                  <Icon className={`w-6 h-6 ${item.iconColor}`} />
+              <div key={item.title} className="border p-6 transition-colors duration-200"
+                style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--cuidar-verde-institucional)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--cuidar-borde)'}
+              >
+                <div className="w-11 h-11 border flex items-center justify-center mb-4"
+                  style={{ background: 'var(--cuidar-nieve)', borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-verde-institucional)' }}>
+                  <Icon className="w-5 h-5" />
                 </div>
-                <h3 className="font-heading font-bold text-gray-800 text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+                <h3 className="font-heading font-semibold text-base mb-2" style={{ color: 'var(--cuidar-tinta)' }}>{item.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--cuidar-texto)' }}>{item.desc}</p>
               </div>
             )
           })}

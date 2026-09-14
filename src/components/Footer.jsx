@@ -52,7 +52,7 @@ export default function Footer() {
                   key={label}
                   href={href}
                   aria-label={label}
-                  className="w-9 h-9 rounded-lg bg-gray-800 flex items-center justify-center text-gray-400 hover:text-teal-400 hover:bg-gray-700 transition-colors"
+                  className="w-9 h-9 bg-gray-800 flex items-center justify-center text-gray-400 hover:text-[#9FB6A8] hover:bg-gray-700 transition-colors"
                 >
                   <Icon className="w-4 h-4" />
                 </a>
@@ -66,7 +66,7 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {servicios.map((l) => (
                 <li key={l.label}>
-                  <a href={l.href} className="text-sm text-gray-400 hover:text-teal-400 transition-colors">
+                  <a href={l.href} className="text-sm text-gray-400 hover:text-[#9FB6A8] transition-colors">
                     {l.label}
                   </a>
                 </li>
@@ -80,7 +80,7 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {empresa.map((l) => (
                 <li key={l.label}>
-                  <a href={l.href} className="text-sm text-gray-400 hover:text-teal-400 transition-colors">
+                  <a href={l.href} className="text-sm text-gray-400 hover:text-[#9FB6A8] transition-colors">
                     {l.label}
                   </a>
                 </li>
@@ -93,18 +93,18 @@ export default function Footer() {
             <h4 className="font-heading font-semibold text-white mb-4">Contacto</h4>
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-2 text-sm text-gray-400">
-                <MapPin className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--cuidar-verde-300)' }} />
                 Buenos Aires, Argentina
               </li>
               <li className="flex items-center gap-2 text-sm">
-                <Mail className="w-4 h-4 text-teal-400 flex-shrink-0" />
-                <a href="mailto:hola@cuid-ar.com" className="text-gray-400 hover:text-teal-400 transition-colors">
+                <Mail className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--cuidar-verde-300)' }} />
+                <a href="mailto:hola@cuid-ar.com" className="text-gray-400 hover:text-[#9FB6A8] transition-colors">
                   hola@cuid-ar.com
                 </a>
               </li>
               <li className="flex items-center gap-2 text-sm">
-                <Phone className="w-4 h-4 text-teal-400 flex-shrink-0" />
-                <a href="tel:+541100000000" className="text-gray-400 hover:text-teal-400 transition-colors">
+                <Phone className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--cuidar-verde-300)' }} />
+                <a href="tel:+541100000000" className="text-gray-400 hover:text-[#9FB6A8] transition-colors">
                   +54 11 0000-0000
                 </a>
               </li>
@@ -126,7 +126,7 @@ export default function Footer() {
         <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-sm text-gray-500">© 2026 CuidAR 360. Todos los derechos reservados.</p>
           <p className="text-xs text-gray-600 flex items-center gap-1.5">
-            Hecho con <Heart className="w-3 h-3 text-teal-500 fill-teal-500" /> en Buenos Aires
+            Hecho con <Heart className="w-3 h-3" style={{ color: 'var(--cuidar-coral-humano)', fill: 'var(--cuidar-coral-humano)' }} /> en Buenos Aires
           </p>
         </div>
       </div>

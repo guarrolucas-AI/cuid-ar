@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, Mail, ArrowLeft, CheckCircle } from 'lucide-react'
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
+import { Isotipo } from '../lib/Isotipo'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -27,62 +28,74 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--cuidar-nieve)' }}>
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 justify-center">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-white fill-white" />
-            </div>
-            <span className="font-heading font-bold text-2xl">
-              <span className="text-teal-500">CUID</span><span className="text-gray-700">_AR</span>
-            </span>
-          </Link>
-        </div>
+        <Link to="/" className="flex items-center justify-center gap-2.5 mb-8">
+          <Isotipo size={36} variant="color" />
+          <span className="font-heading font-bold text-xl tracking-tight">
+            <span style={{ color: 'var(--cuidar-verde-institucional)' }}>CuidAR</span>
+            <span style={{ color: 'var(--cuidar-gris-medio)' }}> 360</span>
+          </span>
+        </Link>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="border p-8" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
           {sent ? (
             <div className="text-center space-y-4">
-              <CheckCircle className="w-12 h-12 text-teal-500 mx-auto" />
-              <h2 className="font-heading text-xl font-bold text-gray-800">Revisá tu email</h2>
-              <p className="text-sm text-gray-500">
+              <CheckCircle className="w-10 h-10 mx-auto" style={{ color: 'var(--cuidar-verde-institucional)' }} />
+              <h2 className="font-heading text-xl font-bold" style={{ color: 'var(--cuidar-tinta)' }}>Revisá tu email</h2>
+              <p className="text-sm" style={{ color: 'var(--cuidar-gris-medio)' }}>
                 Si ese email está registrado, vas a recibir un enlace para restablecer tu contraseña. El enlace expira en 1 hora.
               </p>
-              <Link to="/login" className="inline-flex items-center gap-2 text-teal-600 font-semibold text-sm hover:underline mt-4">
+              <Link to="/login" className="inline-flex items-center gap-2 text-sm font-semibold mt-4"
+                style={{ color: 'var(--cuidar-verde-institucional)' }}>
                 <ArrowLeft className="w-4 h-4" /> Volver al inicio de sesión
               </Link>
             </div>
           ) : (
             <>
-              <h2 className="font-heading text-xl font-bold text-gray-800 mb-1">Olvidé mi contraseña</h2>
-              <p className="text-sm text-gray-500 mb-6">Ingresá tu email y te enviamos un enlace para restablecer tu contraseña.</p>
+              <h2 className="font-heading text-xl font-bold mb-1" style={{ color: 'var(--cuidar-tinta)' }}>
+                Olvidé mi contraseña
+              </h2>
+              <p className="text-sm mb-6" style={{ color: 'var(--cuidar-gris-suave)' }}>
+                Ingresá tu email y te enviamos un enlace para restablecer tu contraseña.
+              </p>
 
               {error && (
-                <div className="mb-4 px-4 py-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl">
+                <div className="mb-4 px-4 py-3 border text-sm"
+                  style={{ background: 'var(--cuidar-coral-soft)', borderColor: '#D9544D', color: '#B8433D' }}>
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>Email</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--cuidar-gris-suave)' }} />
                     <input
                       type="email" required value={email} onChange={e => setEmail(e.target.value)}
                       placeholder="tu@email.com"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                      className="w-full pl-10 pr-4 py-3 border text-sm outline-none"
+                      style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-texto)' }}
+                      onFocus={e => e.currentTarget.style.borderColor = 'var(--cuidar-verde-institucional)'}
+                      onBlur={e => e.currentTarget.style.borderColor = 'var(--cuidar-borde)'}
                     />
                   </div>
                 </div>
                 <button type="submit" disabled={loading}
-                  className="w-full py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60">
+                  className="w-full py-3 text-white font-semibold text-sm transition-colors disabled:opacity-60"
+                  style={{ background: 'var(--cuidar-verde-institucional)' }}
+                  onMouseEnter={e => !loading && (e.currentTarget.style.background = 'var(--cuidar-verde-700)')}
+                  onMouseLeave={e => !loading && (e.currentTarget.style.background = 'var(--cuidar-verde-institucional)')}>
                   {loading ? 'Enviando…' : 'Enviar enlace'}
                 </button>
               </form>
 
               <div className="mt-6 text-center">
-                <Link to="/login" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-teal-600 transition-colors">
+                <Link to="/login" className="inline-flex items-center gap-1 text-sm transition-colors"
+                  style={{ color: 'var(--cuidar-gris-suave)' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--cuidar-verde-institucional)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-gris-suave)'}>
                   <ArrowLeft className="w-3.5 h-3.5" /> Volver al inicio de sesión
                 </Link>
               </div>

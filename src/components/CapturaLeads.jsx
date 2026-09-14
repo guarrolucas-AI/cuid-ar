@@ -17,46 +17,57 @@ const beneficiosProfesionales = [
 
 export default function CapturaLeads() {
   return (
-    <section id="registro" className="py-24 bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600 relative overflow-hidden">
-      {/* Decorative blobs */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-white/5 pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-white/5 pointer-events-none" />
+    <section id="registro" className="py-24 relative overflow-hidden"
+      style={{ background: 'var(--cuidar-verde-institucional)' }}>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
-          <h2 className="font-heading text-4xl lg:text-5xl font-bold text-white mb-4">
+          <span className="block text-xs font-semibold uppercase mb-3"
+            style={{ color: 'var(--cuidar-agua-clara)', letterSpacing: '0.18em' }}>
+            Unite a la Red
+          </span>
+          <h2 className="font-heading font-bold text-white mb-4"
+            style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', letterSpacing: '-0.015em' }}>
             ¿Cómo podemos ayudarte?
           </h2>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto">
+          <p className="max-w-2xl mx-auto" style={{ color: 'rgba(246,248,246,0.72)', fontSize: '15.5px' }}>
             Elegí tu camino y unite a la red de cuidado más confiable de Buenos Aires
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
 
           {/* Card Familias */}
-          <div className="bg-white rounded-3xl p-8 lg:p-10 shadow-2xl">
-            <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mb-6">
-              <Search className="w-8 h-8 text-teal-600" />
+          <div className="p-8 lg:p-10" style={{ background: '#FFFFFF' }}>
+            <div className="w-14 h-14 border flex items-center justify-center mb-6"
+              style={{ background: 'var(--cuidar-nieve)', borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-verde-institucional)' }}>
+              <Search className="w-7 h-7" />
             </div>
-            <span className="text-xs font-bold text-teal-500 uppercase tracking-widest">Para familias</span>
-            <h3 className="font-heading text-2xl lg:text-3xl font-bold text-gray-800 mt-2 mb-4">
+            <span className="text-xs font-semibold uppercase"
+              style={{ color: 'var(--cuidar-gris-suave)', letterSpacing: '0.18em' }}>
+              Para familias
+            </span>
+            <h3 className="font-heading font-bold text-2xl lg:text-3xl mt-2 mb-4"
+              style={{ color: 'var(--cuidar-tinta)' }}>
               Busco un Profesional de Cuidado
             </h3>
-            <p className="text-gray-600 mb-6 leading-relaxed">
+            <p className="mb-6 leading-relaxed" style={{ color: 'var(--cuidar-texto)', fontSize: '15px' }}>
               Encontrá al profesional ideal para tu familia de forma fácil, rápida y con total transparencia en precios y credenciales.
             </p>
             <ul className="space-y-3 mb-8">
               {beneficiosFamilias.map((b) => (
-                <li key={b} className="flex items-start gap-3 text-sm text-gray-600">
-                  <CheckCircle className="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" />
+                <li key={b} className="flex items-start gap-3 text-sm" style={{ color: 'var(--cuidar-texto)' }}>
+                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--cuidar-verde-institucional)' }} />
                   {b}
                 </li>
               ))}
             </ul>
             <Link
               to="/register?role=padre"
-              className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold rounded-2xl hover:from-teal-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
+              className="w-full flex items-center justify-center gap-2 px-8 py-4 text-white font-bold text-base transition-colors group"
+              style={{ background: 'var(--cuidar-verde-institucional)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}
             >
               Quiero encontrar un profesional
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -64,28 +75,35 @@ export default function CapturaLeads() {
           </div>
 
           {/* Card Profesionales */}
-          <div className="bg-white/12 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-white/30">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
-              <UserCheck className="w-8 h-8 text-white" />
+          <div className="p-8 lg:p-10 border-2"
+            style={{ background: 'rgba(246,248,246,0.07)', borderColor: 'rgba(246,248,246,0.2)' }}>
+            <div className="w-14 h-14 flex items-center justify-center mb-6"
+              style={{ background: 'rgba(246,248,246,0.12)', border: '1px solid rgba(246,248,246,0.25)', color: '#F6F8F6' }}>
+              <UserCheck className="w-7 h-7" />
             </div>
-            <span className="text-xs font-bold text-white/70 uppercase tracking-widest">Para profesionales</span>
-            <h3 className="font-heading text-2xl lg:text-3xl font-bold text-white mt-2 mb-4">
+            <span className="text-xs font-semibold uppercase" style={{ color: 'rgba(246,248,246,0.6)', letterSpacing: '0.18em' }}>
+              Para profesionales
+            </span>
+            <h3 className="font-heading font-bold text-2xl lg:text-3xl mt-2 mb-4" style={{ color: '#F6F8F6' }}>
               Quiero registrarme como Profesional
             </h3>
-            <p className="text-white/80 mb-6 leading-relaxed">
+            <p className="mb-6 leading-relaxed" style={{ color: 'rgba(246,248,246,0.72)', fontSize: '15px' }}>
               Unite a la red y conectá con familias que valoran tu trabajo. Gestioná tu agenda con autonomía y a precios justos.
             </p>
             <ul className="space-y-3 mb-8">
               {beneficiosProfesionales.map((b) => (
-                <li key={b} className="flex items-start gap-3 text-sm text-white/85">
-                  <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                <li key={b} className="flex items-start gap-3 text-sm" style={{ color: 'rgba(246,248,246,0.80)' }}>
+                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#F6F8F6' }} />
                   {b}
                 </li>
               ))}
             </ul>
             <Link
               to="/register?role=profesional"
-              className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-2xl hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
+              className="w-full flex items-center justify-center gap-2 px-8 py-4 font-bold text-base transition-colors group"
+              style={{ background: '#F6F8F6', color: 'var(--cuidar-verde-institucional)' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#FFFFFF'}
+              onMouseLeave={e => e.currentTarget.style.background = '#F6F8F6'}
             >
               Registrarme como profesional
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

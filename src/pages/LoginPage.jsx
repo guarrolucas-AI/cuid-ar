@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Heart, Mail, Lock, AlertCircle } from 'lucide-react'
+import { Mail, Lock, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { Isotipo } from '../lib/Isotipo'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -17,7 +18,7 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const user = await login(form.email, form.password)
+      await login(form.email, form.password)
       navigate('/dashboard')
     } catch (err) {
       setError(err.message)
@@ -26,26 +27,30 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: 'var(--cuidar-nieve)' }}>
       <div className="w-full max-w-md">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg">
-            <Heart className="w-5 h-5 text-white fill-white" />
-          </div>
-          <span className="font-heading font-bold text-2xl">
-            <span className="text-teal-500">CUID</span>
-            <span className="text-gray-700">_AR</span>
+        <Link to="/" className="flex items-center justify-center gap-2.5 mb-8">
+          <Isotipo size={36} variant="color" />
+          <span className="font-heading font-bold text-xl tracking-tight">
+            <span style={{ color: 'var(--cuidar-verde-institucional)' }}>CuidAR</span>
+            <span style={{ color: 'var(--cuidar-gris-medio)' }}> 360</span>
           </span>
         </Link>
 
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
-          <h1 className="font-heading text-2xl font-bold text-gray-800 mb-1">Bienvenido de vuelta</h1>
-          <p className="text-sm text-gray-500 mb-7">Ingresá con tu cuenta para continuar</p>
+        <div className="border p-8" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+          <h1 className="font-heading text-2xl font-bold mb-1" style={{ color: 'var(--cuidar-tinta)' }}>
+            Bienvenido de vuelta
+          </h1>
+          <p className="text-sm mb-7" style={{ color: 'var(--cuidar-gris-suave)' }}>
+            Ingresá con tu cuenta para continuar
+          </p>
 
           {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-5">
+            <div className="flex items-center gap-2 border text-sm px-4 py-3 mb-5"
+              style={{ background: 'var(--cuidar-coral-soft)', borderColor: '#D9544D', color: '#B8433D' }}>
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -53,31 +58,37 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+              <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>Email</label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--cuidar-gris-suave)' }} />
                 <input
                   type="email"
                   required
                   value={form.email}
                   onChange={(e) => set('email', e.target.value)}
                   placeholder="tu@email.com"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full pl-10 pr-4 py-3 border text-sm outline-none"
+                  style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-texto)', background: '#FFFFFF' }}
+                  onFocus={e => e.currentTarget.style.borderColor = 'var(--cuidar-verde-institucional)'}
+                  onBlur={e => e.currentTarget.style.borderColor = 'var(--cuidar-borde)'}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña</label>
+              <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>Contraseña</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--cuidar-gris-suave)' }} />
                 <input
                   type="password"
                   required
                   value={form.password}
                   onChange={(e) => set('password', e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full pl-10 pr-4 py-3 border text-sm outline-none"
+                  style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-texto)', background: '#FFFFFF' }}
+                  onFocus={e => e.currentTarget.style.borderColor = 'var(--cuidar-verde-institucional)'}
+                  onBlur={e => e.currentTarget.style.borderColor = 'var(--cuidar-borde)'}
                 />
               </div>
             </div>
@@ -85,21 +96,28 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md hover:shadow-lg disabled:opacity-60 mt-2"
+              className="w-full py-3.5 text-white font-bold text-sm mt-2 transition-colors disabled:opacity-60"
+              style={{ background: 'var(--cuidar-verde-institucional)' }}
+              onMouseEnter={e => !loading && (e.currentTarget.style.background = 'var(--cuidar-verde-700)')}
+              onMouseLeave={e => !loading && (e.currentTarget.style.background = 'var(--cuidar-verde-institucional)')}
             >
               {loading ? 'Ingresando…' : 'Ingresar'}
             </button>
           </form>
 
           <div className="text-center mt-4">
-            <Link to="/forgot-password" className="text-sm text-gray-400 hover:text-teal-600 transition-colors">
+            <Link to="/forgot-password" className="text-sm transition-colors"
+              style={{ color: 'var(--cuidar-gris-suave)' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--cuidar-verde-institucional)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-gris-suave)'}>
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-4">
+          <p className="text-center text-sm mt-4" style={{ color: 'var(--cuidar-gris-medio)' }}>
             ¿No tenés cuenta?{' '}
-            <Link to="/register" className="text-teal-600 font-semibold hover:underline">
+            <Link to="/register" className="font-semibold"
+              style={{ color: 'var(--cuidar-verde-institucional)' }}>
               Registrate gratis
             </Link>
           </p>
