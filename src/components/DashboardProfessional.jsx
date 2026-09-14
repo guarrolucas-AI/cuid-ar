@@ -101,51 +101,53 @@ export default function DashboardProfessional({ user, professional: init }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobsOpen])
 
-  const CAT_LABELS_MAP = {
-    infantil: 'Cuidado Infantil', pedagogico: 'Apoyo Pedagógico',
-    salud: 'Salud Pediátrica', terapeutico: 'Cuidado Terapéutico', limpieza: 'Limpieza del Hogar',
-  }
-
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-5">
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold text-white ${toast.ok ? 'bg-teal-500' : 'bg-red-500'}`}>
+        <div className="fixed top-4 right-4 z-50 px-5 py-3 text-sm font-semibold text-white"
+          style={{ background: toast.ok ? 'var(--cuidar-verde-institucional)' : 'var(--cuidar-coral-humano)', boxShadow: 'var(--cuidar-shadow-overlay)' }}>
           {toast.msg}
         </div>
       )}
 
       {/* Header */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+      <div className="p-6 border flex items-center justify-between gap-4"
+        style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
         <div className="flex items-center gap-4">
           <PhotoUpload pro={pro} setPro={setPro} notify={notify} />
           <div>
-          <h2 className="font-heading text-2xl font-bold text-gray-800">{pro.name}</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {(pro.categories ?? []).map((cat) => (
-              <span key={cat} className="text-xs font-semibold bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
-                {CATEGORIES.find(c => c.value === cat)?.label ?? cat}
-              </span>
-            ))}
-            {subscribed
-              ? <span className="text-xs font-semibold bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center gap-1">
-                  <CreditCard className="w-3 h-3"/>Suscripción activa
+            <h2 className="font-heading text-2xl font-bold" style={{ color: 'var(--cuidar-tinta)' }}>{pro.name}</h2>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--cuidar-gris-suave)' }}>{user.email}</p>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {(pro.categories ?? []).map((cat) => (
+                <span key={cat} className="text-xs font-semibold px-3 py-1"
+                  style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-borde)' }}>
+                  {CATEGORIES.find(c => c.value === cat)?.label ?? cat}
                 </span>
-              : <span className="text-xs font-semibold bg-red-100 text-red-600 px-3 py-1 rounded-full flex items-center gap-1">
-                  <Lock className="w-3 h-3"/>Sin suscripción
-                </span>
-            }
-          </div>
+              ))}
+              {subscribed
+                ? <span className="text-xs font-semibold px-3 py-1 flex items-center gap-1"
+                    style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-verde-institucional)' }}>
+                    <CreditCard className="w-3 h-3"/>Suscripción activa
+                  </span>
+                : <span className="text-xs font-semibold px-3 py-1 flex items-center gap-1"
+                    style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' }}>
+                    <Lock className="w-3 h-3"/>Sin suscripción
+                  </span>
+              }
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {subscribed && <NotificationBell onViewJob={openJobsSection} />}
           {pro.verified
-            ? <div className="flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full border border-teal-200">
-                <ShieldCheck className="w-5 h-5" /><span className="text-sm font-semibold">Verificado</span>
+            ? <div className="flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-verde-institucional)', borderRadius: '999px' }}>
+                <ShieldCheck className="w-5 h-5" />Verificado
               </div>
-            : <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-full border border-amber-200">
-                <ShieldX className="w-5 h-5" /><span className="text-sm font-semibold">Pendiente</span>
+            : <div className="flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d', borderRadius: '999px' }}>
+                <ShieldX className="w-5 h-5" />Pendiente
               </div>
           }
         </div>
@@ -161,14 +163,14 @@ export default function DashboardProfessional({ user, professional: init }) {
           <ProfileProgress pro={pro} onScrollTo={scrollTo} />
 
           {/* Disponibilidad */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="font-heading font-bold text-gray-800 mb-4">Disponibilidad</h3>
+          <div className="p-6 border" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+            <h3 className="font-heading font-bold mb-4" style={{ color: 'var(--cuidar-tinta)' }}>Disponibilidad</h3>
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-700">
+                <p className="text-sm font-medium" style={{ color: 'var(--cuidar-texto)' }}>
                   {pro.available ? 'Disponible para nuevas consultas' : 'No disponible en este momento'}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs mt-1" style={{ color: 'var(--cuidar-gris-suave)' }}>
                   {pro.available ? 'Aparecés en los resultados de búsqueda' : 'No aparecés en ninguna búsqueda'}
                 </p>
               </div>
@@ -179,35 +181,39 @@ export default function DashboardProfessional({ user, professional: init }) {
                     setPro(p => ({ ...p, available: u.available }))
                   } catch (e) { notify(e.message, false) }
                 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold text-sm transition-all flex-shrink-0 ${
-                  pro.available ? 'bg-teal-500 text-white hover:bg-teal-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                }`}
-              >
+                className="flex items-center gap-2 px-4 py-2.5 font-semibold text-sm transition-all flex-shrink-0"
+                style={pro.available
+                  ? { background: 'var(--cuidar-verde-institucional)', color: '#FFFFFF' }
+                  : { background: 'var(--cuidar-nieve)', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)' }}>
                 {pro.available ? <><ToggleRight className="w-5 h-5"/>Activo</> : <><ToggleLeft className="w-5 h-5"/>Inactivo</>}
               </button>
             </div>
 
             {/* Toggle De Guardia */}
-            <div className={`mt-4 p-4 rounded-2xl border-2 transition-all ${pro.onDuty ? 'border-green-300 bg-green-50' : 'border-gray-100 bg-gray-50'}`}>
+            <div className="mt-4 p-4 border-2 transition-all"
+              style={{
+                borderColor: pro.onDuty ? 'var(--cuidar-verde-institucional)' : 'var(--cuidar-borde)',
+                background: pro.onDuty ? 'rgba(31,77,58,.05)' : 'var(--cuidar-nieve)',
+              }}>
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-                    <Zap className={`w-4 h-4 ${pro.onDuty ? 'text-green-600' : 'text-gray-400'}`} />
+                  <p className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--cuidar-tinta)' }}>
+                    <Zap className="w-4 h-4" style={{ color: pro.onDuty ? 'var(--cuidar-verde-institucional)' : 'var(--cuidar-gris-suave)' }} />
                     {pro.onDuty ? 'Estás De Guardia hoy' : 'Disponibilidad Inmediata / Guardia'}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--cuidar-gris-suave)' }}>
                     {pro.onDuty ? 'Las familias te ven como "Disponible Hoy" y pueden enviarte solicitudes urgentes' : 'Activalo si estás disponible para atender hoy con urgencia'}
                   </p>
                 </div>
                 <button
                   onClick={toggleDuty}
                   disabled={dutyLoading}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold text-sm transition-all flex-shrink-0 disabled:opacity-60 ${
-                    pro.onDuty ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                  }`}
-                >
+                  className="flex items-center gap-2 px-4 py-2.5 font-semibold text-sm transition-all flex-shrink-0 disabled:opacity-60"
+                  style={pro.onDuty
+                    ? { background: 'var(--cuidar-verde-institucional)', color: '#FFFFFF' }
+                    : { background: 'var(--cuidar-nieve)', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)' }}>
                   <Zap className="w-4 h-4" />
-                  {pro.onDuty ? 'En Guardia' : 'Activar Guardia'}
+                  {dutyLoading ? '…' : pro.onDuty ? 'En Guardia' : 'Activar Guardia'}
                 </button>
               </div>
             </div>
@@ -217,54 +223,58 @@ export default function DashboardProfessional({ user, professional: init }) {
           <AlertasConfig />
 
           {/* Tablero de búsquedas activas */}
-          <div id="jobs-section" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div id="jobs-section" className="border overflow-hidden" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
             <button
               onClick={() => setJobsOpen((v) => !v)}
-              className="w-full flex items-center justify-between gap-3 p-5 text-left hover:bg-gray-50 transition-colors"
-            >
-              <span className="flex items-center gap-2 font-heading font-bold text-gray-800">
-                <Briefcase className="w-5 h-5 text-blue-500" />
+              className="w-full flex items-center justify-between gap-3 p-5 text-left transition-colors"
+              style={{ color: 'var(--cuidar-tinta)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-nieve)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <span className="flex items-center gap-2 font-heading font-bold">
+                <Briefcase className="w-5 h-5" style={{ color: 'var(--cuidar-verde-institucional)' }} />
                 Búsquedas en tu zona
               </span>
-              {jobsOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              {jobsOpen
+                ? <ChevronUp className="w-5 h-5" style={{ color: 'var(--cuidar-gris-suave)' }} />
+                : <ChevronDown className="w-5 h-5" style={{ color: 'var(--cuidar-gris-suave)' }} />}
             </button>
 
             {jobsOpen && (
-              <div className="border-t border-gray-100 p-4 space-y-3">
+              <div className="p-4 space-y-3" style={{ borderTop: '1px solid var(--cuidar-borde)' }}>
                 {jobPosts.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-6">No hay búsquedas activas en tu zona por el momento.</p>
+                  <p className="text-sm text-center py-6" style={{ color: 'var(--cuidar-gris-suave)' }}>No hay búsquedas activas en tu zona por el momento.</p>
                 ) : (
                   jobPosts.map((job) => (
-                    <div key={job.id} className="rounded-2xl border-2 border-blue-100 bg-blue-50 p-4 space-y-2">
+                    <div key={job.id} className="border-2 p-4 space-y-2"
+                      style={{ borderColor: 'var(--cuidar-verde-institucional)', background: 'rgba(31,77,58,.04)' }}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-heading font-bold text-gray-800 text-sm">{job.categoryLabel}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="font-heading font-bold text-sm" style={{ color: 'var(--cuidar-tinta)' }}>{job.categoryLabel}</p>
+                          <p className="text-xs mt-0.5" style={{ color: 'var(--cuidar-gris-suave)' }}>
                             {job.zone} · {job.schedule} · {job.modality}
                           </p>
                           {job.days?.length > 0 && (
-                            <p className="text-xs text-blue-600 mt-1">{job.days.join(', ')}</p>
+                            <p className="text-xs mt-1" style={{ color: 'var(--cuidar-verde-institucional)' }}>{job.days.join(', ')}</p>
                           )}
                           {job.requirements?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1.5">
                               {job.requirements.map((r) => (
-                                <span key={r} className="text-xs bg-white text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">{r}</span>
+                                <span key={r} className="text-xs px-2 py-0.5"
+                                  style={{ background: '#FFFFFF', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)' }}>{r}</span>
                               ))}
                             </div>
                           )}
-                          {job.notes && <p className="text-xs text-gray-500 mt-1 italic">{job.notes}</p>}
+                          {job.notes && <p className="text-xs mt-1 italic" style={{ color: 'var(--cuidar-gris-suave)' }}>{job.notes}</p>}
                         </div>
-                        <span className="text-xs text-gray-400 flex-shrink-0">{job.applicantCount} postulado{job.applicantCount !== 1 ? 's' : ''}</span>
+                        <span className="text-xs flex-shrink-0" style={{ color: 'var(--cuidar-gris-suave)' }}>{job.applicantCount} postulado{job.applicantCount !== 1 ? 's' : ''}</span>
                       </div>
                       <button
                         onClick={() => applyToJob(job.id)}
                         disabled={job.alreadyApplied}
-                        className={`w-full py-2 rounded-xl text-sm font-semibold transition-colors ${
-                          job.alreadyApplied
-                            ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
-                      >
+                        className="w-full py-2 text-sm font-semibold transition-colors"
+                        style={job.alreadyApplied
+                          ? { background: 'rgba(31,77,58,.06)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-verde-institucional)', cursor: 'default' }
+                          : { background: 'var(--cuidar-verde-institucional)', color: '#FFFFFF' }}>
                         {job.alreadyApplied ? '✓ Ya te postulaste' : 'Postularme'}
                       </button>
                     </div>
@@ -327,18 +337,19 @@ function PhotoUpload({ pro, setPro, notify }) {
       type="button"
       onClick={() => inputRef.current?.click()}
       disabled={uploading}
-      className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-sm flex-shrink-0 group"
-      title="Cambiar foto de perfil"
-    >
+      className="relative w-16 h-16 overflow-hidden flex-shrink-0 group"
+      style={{ background: 'var(--cuidar-nieve)', border: '2px solid var(--cuidar-borde)' }}
+      title="Cambiar foto de perfil">
       {pro.photoUrl
-        ? <img src={pro.photoUrl} alt={pro.name} className="w-full h-full object-cover" />
-        : <div className="w-full h-full flex items-center justify-center text-gray-300"><User className="w-7 h-7" /></div>
+        ? <img src={pro.photoUrl} alt={pro.name} className="w-full h-full object-cover" style={{ aspectRatio: '1/1' }} />
+        : <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--cuidar-gris-suave)' }}><User className="w-7 h-7" /></div>
       }
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ background: 'rgba(0,0,0,0.4)' }}>
         <Camera className="w-5 h-5 text-white" />
       </div>
       {uploading && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
           <RefreshCw className="w-5 h-5 text-white animate-spin" />
         </div>
       )}
@@ -348,10 +359,10 @@ function PhotoUpload({ pro, setPro, notify }) {
 }
 
 function PaymentWall() {
-  const [loading, setLoading]       = useState(false)
-  const [checking, setChecking]     = useState(false)
-  const [error, setError]           = useState('')
-  const { refreshUser }             = useAuth()
+  const [loading, setLoading]   = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [error, setError]       = useState('')
+  const { refreshUser }         = useAuth()
 
   const handleSubscribe = async () => {
     setLoading(true); setError('')
@@ -383,28 +394,37 @@ function PaymentWall() {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-sm border border-red-100 text-center space-y-4">
-      <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
-        <Lock className="w-7 h-7 text-red-400" />
+    <div className="p-8 border text-center space-y-4"
+      style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)', borderLeft: '3px solid var(--cuidar-coral-humano)' }}>
+      <div className="w-14 h-14 flex items-center justify-center mx-auto"
+        style={{ background: 'var(--cuidar-coral-soft)', border: '1px solid var(--cuidar-borde)' }}>
+        <Lock className="w-7 h-7" style={{ color: 'var(--cuidar-coral-humano)' }} />
       </div>
-      <h3 className="font-heading text-xl font-bold text-gray-800">Activá tu suscripción</h3>
-      <p className="text-sm text-gray-500 max-w-sm mx-auto">
+      <h3 className="font-heading text-xl font-bold" style={{ color: 'var(--cuidar-tinta)' }}>Activá tu suscripción</h3>
+      <p className="text-sm max-w-sm mx-auto" style={{ color: 'var(--cuidar-gris-suave)' }}>
         Para recibir consultas de familias, aparecer en los resultados de búsqueda y acceder a todas las funciones, necesitás tener una suscripción activa.
       </p>
-      <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 space-y-1 text-left max-w-xs mx-auto">
-        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Aparecés en búsquedas</p>
-        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Recibís consultas de familias</p>
-        <p className="flex items-center gap-2"><span className="text-red-400">✗</span> Editás tu perfil y tarifa</p>
+      <div className="p-4 text-sm space-y-1 text-left max-w-xs mx-auto"
+        style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)' }}>
+        <p className="flex items-center gap-2" style={{ color: 'var(--cuidar-coral-humano)' }}>✗ <span style={{ color: 'var(--cuidar-texto)' }}>Aparecés en búsquedas</span></p>
+        <p className="flex items-center gap-2" style={{ color: 'var(--cuidar-coral-humano)' }}>✗ <span style={{ color: 'var(--cuidar-texto)' }}>Recibís consultas de familias</span></p>
+        <p className="flex items-center gap-2" style={{ color: 'var(--cuidar-coral-humano)' }}>✗ <span style={{ color: 'var(--cuidar-texto)' }}>Editás tu perfil y tarifa</span></p>
       </div>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm" style={{ color: 'var(--cuidar-coral-humano)' }}>{error}</p>}
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button onClick={handleSubscribe} disabled={loading}
-          className="inline-flex items-center gap-2 px-8 py-3 bg-teal-500 text-white font-bold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 text-sm">
+          className="inline-flex items-center gap-2 px-8 py-3 font-bold disabled:opacity-60 text-sm text-white transition-colors"
+          style={{ background: 'var(--cuidar-verde-institucional)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
           <CreditCard className="w-4 h-4"/>
           {loading ? 'Redirigiendo…' : 'Suscribirme ahora'}
         </button>
         <button onClick={handleCheck} disabled={checking}
-          className="inline-flex items-center gap-2 px-5 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60 text-sm">
+          className="inline-flex items-center gap-2 px-5 py-3 font-semibold disabled:opacity-60 text-sm transition-colors"
+          style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--cuidar-verde-institucional)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--cuidar-nieve)'; e.currentTarget.style.borderColor = 'var(--cuidar-borde)' }}>
           <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`}/>
           {checking ? 'Verificando…' : 'Ya pagué → Verificar'}
         </button>
@@ -429,39 +449,45 @@ function ContactRequests({ onOpenChat }) {
   }, [])
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-      <h3 className="font-heading font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <Bell className="w-4 h-4 text-teal-500" />
+    <div className="p-6 border" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+      <h3 className="font-heading font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--cuidar-tinta)' }}>
+        <Bell className="w-4 h-4" style={{ color: 'var(--cuidar-verde-institucional)' }} />
         Consultas recibidas
         {requests.length > 0 && (
-          <span className="ml-1 bg-teal-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{requests.length}</span>
+          <span className="ml-1 text-xs font-bold px-2 py-0.5 text-white"
+            style={{ background: 'var(--cuidar-verde-institucional)', borderRadius: '999px' }}>{requests.length}</span>
         )}
       </h3>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-gray-400 text-sm py-4">
+        <div className="flex items-center gap-2 text-sm py-4" style={{ color: 'var(--cuidar-gris-suave)' }}>
           <RefreshCw className="w-4 h-4 animate-spin" /> Cargando…
         </div>
       ) : requests.length === 0 ? (
-        <p className="text-sm text-gray-400 py-4">Todavía no recibiste consultas de familias.</p>
+        <p className="text-sm py-4" style={{ color: 'var(--cuidar-gris-suave)' }}>Todavía no recibiste consultas de familias.</p>
       ) : (
         <div className="space-y-3">
           {requests.map(req => (
-            <div key={req.id} className="border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div key={req.id} className="border p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+              style={{ borderColor: 'var(--cuidar-borde)' }}>
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-gray-800 text-sm">{req.parent.name}</span>
-                  <span className="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full font-medium">
+                  <span className="font-semibold text-sm" style={{ color: 'var(--cuidar-tinta)' }}>{req.parent.name}</span>
+                  <span className="text-xs px-2 py-0.5 font-medium"
+                    style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-borde)' }}>
                     {CAT_LABELS[req.category] ?? req.category}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs" style={{ color: 'var(--cuidar-gris-suave)' }}>
                   {new Date(req.createdAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' })}
                 </p>
               </div>
               {req.conversationId && (
                 <button onClick={() => onOpenChat(req.conversationId)}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-teal-600 hover:text-teal-700 flex-shrink-0">
+                  className="flex items-center gap-1.5 text-sm font-semibold flex-shrink-0 transition-colors"
+                  style={{ color: 'var(--cuidar-verde-institucional)' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--cuidar-verde-700)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-verde-institucional)'}>
                   <MessageCircle className="w-4 h-4"/>Ver conversación
                 </button>
               )}
@@ -482,7 +508,9 @@ function ProfileForm({ pro, setPro, patch, notify }) {
     ...f,
     categories: f.categories.includes(value) ? f.categories.filter(c => c !== value) : [...f.categories, value],
   }))
-  const inputClass = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400'
+
+  const inputStyle = { borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-texto)' }
+  const inputClass = 'w-full px-4 py-3 border text-sm outline-none'
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -498,44 +526,64 @@ function ProfileForm({ pro, setPro, patch, notify }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-      <h3 className="font-heading font-bold text-gray-800 mb-5">Mi Perfil</h3>
+    <div className="p-6 border" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+      <h3 className="font-heading font-bold mb-5" style={{ color: 'var(--cuidar-tinta)' }}>Mi Perfil</h3>
       <form onSubmit={handleSave} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><User className="w-3.5 h-3.5"/>Nombre</label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} required className={inputClass}/>
+            <label className="block text-sm font-semibold mb-1.5 flex items-center gap-1" style={{ color: 'var(--cuidar-texto)' }}>
+              <User className="w-3.5 h-3.5"/>Nombre
+            </label>
+            <input value={form.name} onChange={e => set('name', e.target.value)} required className={inputClass}
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+              onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}
+            />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><Phone className="w-3.5 h-3.5"/>Teléfono</label>
-            <input value={form.phone} onChange={e => set('phone', e.target.value)} required className={inputClass}/>
+            <label className="block text-sm font-semibold mb-1.5 flex items-center gap-1" style={{ color: 'var(--cuidar-texto)' }}>
+              <Phone className="w-3.5 h-3.5"/>Teléfono
+            </label>
+            <input value={form.phone} onChange={e => set('phone', e.target.value)} required className={inputClass}
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+              onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}
+            />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>Zona</label>
-          <select value={form.zone} onChange={e => set('zone', e.target.value)} required className={inputClass}>
+          <label className="block text-sm font-semibold mb-1.5 flex items-center gap-1" style={{ color: 'var(--cuidar-texto)' }}>
+            <MapPin className="w-3.5 h-3.5"/>Zona
+          </label>
+          <select value={form.zone} onChange={e => set('zone', e.target.value)} required className={inputClass}
+            style={{ ...inputStyle, background: '#FFFFFF' }}
+            onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+            onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}>
             {ZONES.map(z => <option key={z} value={z}>{ZONE_LABELS[z]}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1"><Tag className="w-3.5 h-3.5"/>Especialidad(es)</label>
+          <label className="block text-sm font-semibold mb-1.5 flex items-center gap-1" style={{ color: 'var(--cuidar-texto)' }}>
+            <Tag className="w-3.5 h-3.5"/>Especialidad(es)
+          </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {CATEGORIES.map(c => {
               const selected = form.categories.includes(c.value)
               return (
                 <button key={c.value} type="button" onClick={() => toggleCategory(c.value)} aria-pressed={selected}
-                  className={`px-3 py-2 rounded-xl border-2 text-xs font-semibold transition-all ${
-                    selected ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600 hover:border-teal-300'
-                  }`}>
+                  className="px-3 py-2 border-2 text-xs font-semibold transition-all"
+                  style={selected
+                    ? { borderColor: 'var(--cuidar-verde-institucional)', background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)' }
+                    : { borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-gris-medio)', background: '#FFFFFF' }}>
                   {c.label}
                 </button>
               )
             })}
           </div>
-          {catError && <p className="text-xs text-red-500 mt-1.5">{catError}</p>}
+          {catError && <p className="text-xs mt-1.5" style={{ color: 'var(--cuidar-coral-humano)' }}>{catError}</p>}
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+          <label className="block text-sm font-semibold mb-1.5 flex items-center gap-1" style={{ color: 'var(--cuidar-texto)' }}>
             <FileText className="w-3.5 h-3.5"/>Biografía y experiencia
           </label>
           <textarea
@@ -544,12 +592,18 @@ function ProfileForm({ pro, setPro, patch, notify }) {
             placeholder="Contá tu experiencia, formación y lo que te diferencia como profesional…"
             rows={3}
             maxLength={500}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+            className="w-full px-4 py-3 border text-sm outline-none resize-none"
+            style={inputStyle}
+            onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+            onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}
           />
-          <p className="text-xs text-gray-400 mt-1">{form.bio.length}/500</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--cuidar-gris-suave)' }}>{form.bio.length}/500</p>
         </div>
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-60 text-sm">
+          className="flex items-center gap-2 px-5 py-2.5 font-semibold disabled:opacity-60 text-sm text-white transition-colors"
+          style={{ background: 'var(--cuidar-verde-institucional)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
           <Save className="w-4 h-4"/>{saving ? 'Guardando…' : 'Guardar perfil'}
         </button>
       </form>
@@ -558,7 +612,7 @@ function ProfileForm({ pro, setPro, patch, notify }) {
 }
 
 function RateForm({ pro, setPro, patch, notify }) {
-  const [rate, setRate]   = useState(String(pro.hourlyRate))
+  const [rate, setRate]     = useState(String(pro.hourlyRate))
   const [saving, setSaving] = useState(false)
 
   const handleSave = async (e) => {
@@ -573,17 +627,26 @@ function RateForm({ pro, setPro, patch, notify }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-      <h3 className="font-heading font-bold text-gray-800 mb-1">Tarifa por hora</h3>
-      <p className="text-xs text-gray-400 mb-4">Actual: <span className="font-semibold text-teal-600">${Number(pro.hourlyRate).toLocaleString('es-AR')}/hr</span></p>
+    <div className="p-6 border" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+      <h3 className="font-heading font-bold mb-1" style={{ color: 'var(--cuidar-tinta)' }}>Tarifa por hora</h3>
+      <p className="text-xs mb-4" style={{ color: 'var(--cuidar-gris-suave)' }}>
+        Actual: <span className="font-semibold" style={{ color: 'var(--cuidar-verde-institucional)' }}>${Number(pro.hourlyRate).toLocaleString('es-AR')}/hr</span>
+      </p>
       <form onSubmit={handleSave} className="flex gap-3">
         <div className="relative flex-1">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-sm" style={{ color: 'var(--cuidar-gris-suave)' }}>$</span>
           <input type="number" value={rate} onChange={e => setRate(e.target.value)} min="0" step="100" required
-            className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+            className="w-full pl-8 pr-4 py-3 border text-sm font-semibold outline-none"
+            style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-tinta)' }}
+            onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+            onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}
+          />
         </div>
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 px-5 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 disabled:opacity-60 text-sm flex-shrink-0">
+          className="flex items-center gap-2 px-5 py-3 font-semibold disabled:opacity-60 text-sm flex-shrink-0 text-white transition-colors"
+          style={{ background: 'var(--cuidar-verde-institucional)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
           <Save className="w-4 h-4"/>{saving ? 'Guardando…' : 'Guardar'}
         </button>
       </form>

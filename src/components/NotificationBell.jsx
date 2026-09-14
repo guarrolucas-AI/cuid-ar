@@ -15,10 +15,10 @@ function timeAgo(date) {
 }
 
 export default function NotificationBell({ onViewJob }) {
-  const [open, setOpen]               = useState(false)
-  const [notifications, setNotifs]    = useState([])
-  const [unread, setUnread]           = useState(0)
-  const ref                           = useRef(null)
+  const [open, setOpen]            = useState(false)
+  const [notifications, setNotifs] = useState([])
+  const [unread, setUnread]        = useState(0)
+  const ref                        = useRef(null)
 
   const load = async () => {
     try {
@@ -32,30 +32,24 @@ export default function NotificationBell({ onViewJob }) {
 
   const markAllRead = async () => {
     try {
-      await fetch(`${API_BASE}/api/notifications/read-all`, {
-        method: 'POST', headers: authH(),
-      })
-      setNotifs((prev) => prev.map((n) => ({ ...n, read: true })))
+      await fetch(`${API_BASE}/api/notifications/read-all`, { method: 'POST', headers: authH() })
+      setNotifs(prev => prev.map(n => ({ ...n, read: true })))
       setUnread(0)
     } catch {}
   }
 
   const markRead = async (id) => {
     try {
-      await fetch(`${API_BASE}/api/notifications/${id}/read`, {
-        method: 'PATCH', headers: authH(),
-      })
-      setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n))
-      setUnread((prev) => Math.max(0, prev - 1))
+      await fetch(`${API_BASE}/api/notifications/${id}/read`, { method: 'PATCH', headers: authH() })
+      setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+      setUnread(prev => Math.max(0, prev - 1))
     } catch {}
   }
 
   useEffect(() => { load() }, [])
 
   useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
@@ -63,70 +57,83 @@ export default function NotificationBell({ onViewJob }) {
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => { setOpen((v) => !v); load() }}
-        className="relative p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
-        title="Notificaciones"
-      >
+        onClick={() => { setOpen(v => !v); load() }}
+        className="relative p-2.5 transition-colors"
+        style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)' }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--cuidar-verde-institucional)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--cuidar-borde)'}
+        title="Notificaciones">
         {unread > 0
-          ? <BellRing className="w-5 h-5 text-teal-600" />
-          : <Bell className="w-5 h-5 text-gray-500" />}
+          ? <BellRing className="w-5 h-5" style={{ color: 'var(--cuidar-verde-institucional)' }} />
+          : <Bell className="w-5 h-5" style={{ color: 'var(--cuidar-gris-suave)' }} />}
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-teal-500 text-white text-xs font-bold rounded-full flex items-center justify-center leading-none">
+          <span className="absolute -top-1 -right-1 w-5 h-5 text-white text-xs font-bold flex items-center justify-center leading-none"
+            style={{ background: 'var(--cuidar-verde-institucional)', borderRadius: '999px' }}>
             {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+        <div className="absolute right-0 top-12 w-80 border z-50 overflow-hidden"
+          style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)', boxShadow: 'var(--cuidar-shadow-overlay)' }}>
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <span className="font-heading font-bold text-gray-800 text-sm">Notificaciones</span>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--cuidar-borde)' }}>
+            <span className="font-heading font-bold text-sm" style={{ color: 'var(--cuidar-tinta)' }}>Notificaciones</span>
             <div className="flex items-center gap-2">
               {unread > 0 && (
-                <button
-                  onClick={markAllRead}
-                  className="text-xs text-teal-600 hover:text-teal-700 font-semibold flex items-center gap-1"
-                >
+                <button onClick={markAllRead}
+                  className="text-xs font-semibold flex items-center gap-1 transition-colors"
+                  style={{ color: 'var(--cuidar-verde-institucional)' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--cuidar-verde-700)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-verde-institucional)'}>
                   <CheckCheck className="w-3.5 h-3.5" /> Todo leído
                 </button>
               )}
-              <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-gray-100">
-                <X className="w-4 h-4 text-gray-400" />
+              <button onClick={() => setOpen(false)} className="p-1"
+                style={{ color: 'var(--cuidar-gris-suave)' }}>
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Lista */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+          <div className="max-h-80 overflow-y-auto divide-y" style={{ borderColor: 'var(--cuidar-nieve)' }}>
             {notifications.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-10">No hay notificaciones todavía.</p>
+              <p className="text-sm text-center py-10" style={{ color: 'var(--cuidar-gris-suave)' }}>
+                No hay notificaciones todavía.
+              </p>
             ) : (
-              notifications.map((n) => (
-                <div key={n.id} className={`p-4 ${!n.read ? 'bg-teal-50/40' : 'bg-white'}`}>
+              notifications.map(n => (
+                <div key={n.id} className="p-4"
+                  style={{ background: !n.read ? 'var(--cuidar-nieve)' : '#FFFFFF' }}>
                   <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${!n.read ? 'bg-teal-100' : 'bg-gray-100'}`}>
-                      <Briefcase className={`w-4 h-4 ${!n.read ? 'text-teal-600' : 'text-gray-400'}`} />
+                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+                      style={{ background: !n.read ? 'var(--cuidar-nieve)' : 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)' }}>
+                      <Briefcase className="w-4 h-4" style={{ color: !n.read ? 'var(--cuidar-verde-institucional)' : 'var(--cuidar-gris-suave)' }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-bold leading-tight ${!n.read ? 'text-gray-800' : 'text-gray-500'}`}>
+                      <p className="text-xs font-bold leading-tight"
+                        style={{ color: !n.read ? 'var(--cuidar-tinta)' : 'var(--cuidar-gris-medio)' }}>
                         {n.title}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.body}</p>
+                      <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--cuidar-gris-suave)' }}>{n.body}</p>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-xs text-gray-400">{timeAgo(n.createdAt)}</span>
+                        <span className="text-xs" style={{ color: 'var(--cuidar-gris-suave)' }}>{timeAgo(n.createdAt)}</span>
                         {n.jobPostId && (
                           <button
                             onClick={() => { markRead(n.id); setOpen(false); onViewJob?.(n.jobPostId) }}
-                            className="text-xs text-teal-600 font-semibold hover:text-teal-700"
-                          >
+                            className="text-xs font-semibold transition-colors"
+                            style={{ color: 'var(--cuidar-verde-institucional)' }}
+                            onMouseEnter={e => e.currentTarget.style.color = 'var(--cuidar-verde-700)'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-verde-institucional)'}>
                             Ver búsqueda →
                           </button>
                         )}
                       </div>
                     </div>
                     {!n.read && (
-                      <div className="w-2 h-2 rounded-full bg-teal-500 flex-shrink-0 mt-1" />
+                      <div className="w-2 h-2 flex-shrink-0 mt-1" style={{ borderRadius: '999px', background: 'var(--cuidar-verde-institucional)' }} />
                     )}
                   </div>
                 </div>

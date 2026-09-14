@@ -27,48 +27,48 @@ export default function PreselectionGuideToast({ visible, onDismiss, onOpenDrawe
   if (!visible) return null
 
   return (
-    <div
-      className="fixed bottom-6 left-1/2 z-50 w-[calc(100vw-3rem)] max-w-sm"
-      style={{ transform: 'translateX(-50%)' }}
-    >
-      <div className="bg-white rounded-2xl shadow-2xl border-2 border-teal-200 p-5">
+    <div className="fixed bottom-6 left-1/2 z-50 w-[calc(100vw-3rem)] max-w-sm"
+      style={{ transform: 'translateX(-50%)' }}>
+      <div className="border-2 p-5" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-verde-institucional)', boxShadow: 'var(--cuidar-shadow-overlay)' }}>
         <div className="flex items-start gap-3">
           {/* Ícono */}
-          <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
-            <Bookmark className="w-5 h-5 text-teal-600" />
+          <div className="w-10 h-10 flex items-center justify-center flex-shrink-0"
+            style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)' }}>
+            <Bookmark className="w-5 h-5" style={{ color: 'var(--cuidar-verde-institucional)' }} />
           </div>
 
           {/* Contenido */}
           <div className="flex-1 min-w-0">
-            <p className="font-heading font-bold text-gray-800 text-base leading-tight">
+            <p className="font-heading font-bold text-base leading-tight" style={{ color: 'var(--cuidar-tinta)' }}>
               ¡Perfil guardado en tu Preselección!
             </p>
-            <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-              Seguí navegando y guardá hasta 3 profesionales más para compararlos y enviar tus solicitudes.
+            <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--cuidar-gris-medio)' }}>
+              Seguí navegando y guardá hasta 3 profesionales más para compararlos.
             </p>
             <div className="flex items-center gap-3 mt-3">
               <button
                 onClick={() => { onOpenDrawer?.(); onDismiss?.() }}
-                className="flex items-center gap-1.5 text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors"
-              >
+                className="flex items-center gap-1.5 text-sm font-semibold transition-colors"
+                style={{ color: 'var(--cuidar-verde-institucional)' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--cuidar-verde-700)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-verde-institucional)'}>
                 Ver preseleccionados <ArrowRight className="w-3.5 h-3.5" />
               </button>
-              <span className="text-gray-300 select-none">·</span>
-              <button
-                onClick={onDismiss}
-                className="text-sm text-gray-400 hover:text-gray-600 font-medium transition-colors"
-              >
+              <span style={{ color: 'var(--cuidar-borde)' }}>·</span>
+              <button onClick={onDismiss}
+                className="text-sm font-medium transition-colors"
+                style={{ color: 'var(--cuidar-gris-suave)' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--cuidar-tinta)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-gris-suave)'}>
                 Continuar buscando
               </button>
             </div>
           </div>
 
           {/* Cerrar */}
-          <button
-            onClick={onDismiss}
-            className="p-1 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
-          >
-            <X className="w-4 h-4 text-gray-400" />
+          <button onClick={onDismiss} className="p-1 flex-shrink-0 transition-colors"
+            style={{ color: 'var(--cuidar-gris-suave)' }}>
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>

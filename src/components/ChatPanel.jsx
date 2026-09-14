@@ -9,11 +9,6 @@ const authHeaders = () => ({
 
 const CAT_LABELS = { infantil:'Cuidado Infantil', pedagogico:'Apoyo Pedagógico', salud:'Salud Pediátrica', terapeutico:'Cuidado Terapéutico', limpieza:'Limpieza del Hogar' }
 
-// Chat por "polling" (sin WebSockets, por las limitaciones de funciones
-// serverless en Vercel): refresca la lista cada 8s y una conversación
-// abierta cada 4s. Queda documentado en la memoria del proyecto el camino
-// para migrar a Pusher Channels (tiempo real de verdad) el día que se
-// cree esa cuenta.
 export default function ChatPanel({ userId, openConversationId, onOpened }) {
   const [conversations, setConversations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,12 +32,15 @@ export default function ChatPanel({ userId, openConversationId, onOpened }) {
   }, [openConversationId, onOpened])
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <h3 className="font-heading font-bold text-gray-800 px-6 pt-6 mb-4 flex items-center gap-2">
-        <MessageCircle className="w-4 h-4 text-teal-500" />
+    <div className="border overflow-hidden" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+      <h3 className="font-heading font-bold px-6 pt-6 mb-4 flex items-center gap-2" style={{ color: 'var(--cuidar-tinta)' }}>
+        <MessageCircle className="w-4 h-4" style={{ color: 'var(--cuidar-verde-institucional)' }} />
         Mensajes
         {conversations.length > 0 && (
-          <span className="ml-1 bg-teal-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{conversations.length}</span>
+          <span className="ml-1 text-white text-xs font-bold px-2 py-0.5"
+            style={{ background: 'var(--cuidar-verde-institucional)', borderRadius: '999px' }}>
+            {conversations.length}
+          </span>
         )}
       </h3>
 
@@ -51,23 +49,29 @@ export default function ChatPanel({ userId, openConversationId, onOpened }) {
       ) : (
         <div className="px-6 pb-6">
           {loading ? (
-            <p className="text-sm text-gray-400 py-4">Cargando…</p>
+            <p className="text-sm py-4" style={{ color: 'var(--cuidar-gris-suave)' }}>Cargando…</p>
           ) : conversations.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4">Todavía no tenés conversaciones.</p>
+            <p className="text-sm py-4" style={{ color: 'var(--cuidar-gris-suave)' }}>Todavía no tenés conversaciones.</p>
           ) : (
             <div className="space-y-2">
               {conversations.map(c => (
                 <button key={c.id} onClick={() => setActiveId(c.id)}
-                  className="w-full text-left border border-gray-100 rounded-xl p-4 hover:border-teal-200 hover:bg-teal-50/40 transition-colors flex items-center justify-between gap-3">
+                  className="w-full text-left border p-4 transition-colors flex items-center justify-between gap-3"
+                  style={{ borderColor: 'var(--cuidar-borde)', background: '#FFFFFF' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cuidar-verde-institucional)'; e.currentTarget.style.background = 'var(--cuidar-nieve)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--cuidar-borde)'; e.currentTarget.style.background = '#FFFFFF' }}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-gray-800 text-sm">{c.otherParty.name}</span>
-                      <span className="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full font-medium">{CAT_LABELS[c.category] ?? c.category}</span>
+                      <span className="font-semibold text-sm" style={{ color: 'var(--cuidar-tinta)' }}>{c.otherParty.name}</span>
+                      <span className="text-xs px-2 py-0.5 font-medium"
+                        style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)' }}>
+                        {CAT_LABELS[c.category] ?? c.category}
+                      </span>
                       {c.status === 'agreed' && (
                         <span className="flex items-center gap-1 text-xs font-semibold text-green-600"><CheckCircle2 className="w-3 h-3"/>Contratación cerrada</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400 truncate mt-1 max-w-xs">
+                    <p className="text-xs truncate mt-1 max-w-xs" style={{ color: 'var(--cuidar-gris-suave)' }}>
                       {!c.lastMessage
                         ? 'Todavía no hay mensajes'
                         : c.lastMessage.body || (c.lastMessage.attachmentPathname ? '📎 Adjunto' : '')}
@@ -86,9 +90,6 @@ export default function ChatPanel({ userId, openConversationId, onOpened }) {
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 const ATTACHMENT_ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf'
 
-// Los adjuntos del chat viven en un store PRIVADO de Vercel Blob — no hay
-// URL pública para pegar en un <img src>. Hay que pedirlo con el token de
-// auth y armar un blob: URL local para mostrarlo/descargarlo.
 function Attachment({ m, mine }) {
   const [blobUrl, setBlobUrl] = useState(null)
   const [error, setError] = useState(false)
@@ -110,19 +111,20 @@ function Attachment({ m, mine }) {
   }, [m.attachmentPathname])
 
   if (error) return <p className="text-xs italic opacity-70">No se pudo cargar el adjunto</p>
-  if (!blobUrl) return <div className="w-40 h-28 rounded-lg bg-black/10 animate-pulse" />
+  if (!blobUrl) return <div className="w-40 h-28 bg-black/10 animate-pulse" />
 
   if (isImage) {
     return (
       <a href={blobUrl} target="_blank" rel="noreferrer">
-        <img src={blobUrl} alt={m.attachmentName ?? 'adjunto'} className="max-w-[220px] max-h-[220px] rounded-lg object-cover" />
+        <img src={blobUrl} alt={m.attachmentName ?? 'adjunto'} className="max-w-[220px] max-h-[220px] object-cover" />
       </a>
     )
   }
 
   return (
     <a href={blobUrl} download={m.attachmentName ?? 'archivo.pdf'}
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${mine ? 'bg-white/15 text-white' : 'bg-gray-50 text-gray-700 border border-gray-100'}`}>
+      className={`flex items-center gap-2 px-3 py-2 text-xs font-medium ${mine ? 'bg-white/15 text-white' : 'text-gray-700 border'}`}
+      style={!mine ? { background: 'var(--cuidar-nieve)', borderColor: 'var(--cuidar-borde)' } : {}}>
       <FileText className="w-4 h-4 flex-shrink-0" />
       <span className="truncate max-w-[140px]">{m.attachmentName ?? 'archivo.pdf'}</span>
       <Download className="w-3.5 h-3.5 flex-shrink-0" />
@@ -167,7 +169,7 @@ function ConversationThread({ id, userId, onBack, onChanged }) {
       setText('')
       load()
       onChanged?.()
-    } catch { /* el próximo poll retoma el estado real */ }
+    } catch {}
     setSending(false)
   }
 
@@ -188,9 +190,7 @@ function ConversationThread({ id, userId, onBack, onChanged }) {
       if (!res.ok) throw new Error((await res.json()).error)
       load()
       onChanged?.()
-    } catch (err) {
-      alert(err.message)
-    }
+    } catch (err) { alert(err.message) }
     setUploadingFile(false)
   }
 
@@ -209,32 +209,40 @@ function ConversationThread({ id, userId, onBack, onChanged }) {
     load()
   }
 
-  if (!data) return <div className="px-6 pb-6"><p className="text-sm text-gray-400 py-4">Cargando…</p></div>
+  if (!data) return <div className="px-6 pb-6"><p className="text-sm py-4" style={{ color: 'var(--cuidar-gris-suave)' }}>Cargando…</p></div>
 
   const { conversation, messages } = data
 
   return (
     <div className="flex flex-col" style={{ height: 480 }}>
-      <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
-        <button onClick={onBack} className="text-sm text-teal-600 font-semibold flex items-center gap-1">
+      <div className="px-6 py-3 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--cuidar-borde)' }}>
+        <button onClick={onBack} className="text-sm font-semibold flex items-center gap-1 transition-colors"
+          style={{ color: 'var(--cuidar-verde-institucional)' }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--cuidar-verde-700)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-verde-institucional)'}>
           <X className="w-4 h-4"/> Volver
         </button>
         <div className="text-right">
-          <p className="text-sm font-semibold text-gray-800">{conversation.otherParty.name}</p>
-          <p className="text-xs text-gray-400">{CAT_LABELS[conversation.category] ?? conversation.category}</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--cuidar-tinta)' }}>{conversation.otherParty.name}</p>
+          <p className="text-xs" style={{ color: 'var(--cuidar-gris-suave)' }}>{CAT_LABELS[conversation.category] ?? conversation.category}</p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2 bg-gray-50/50">
-        {messages.length === 0 && <p className="text-sm text-gray-400 text-center py-8">Todavía no hay mensajes. ¡Escribí el primero!</p>}
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2" style={{ background: 'var(--cuidar-nieve)' }}>
+        {messages.length === 0 && (
+          <p className="text-sm text-center py-8" style={{ color: 'var(--cuidar-gris-suave)' }}>Todavía no hay mensajes. ¡Escribí el primero!</p>
+        )}
         {messages.map(m => {
           const mine = m.senderId === userId
           return (
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm ${mine ? 'bg-teal-500 text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-sm'}`}>
+              <div className="max-w-[75%] px-4 py-2 text-sm"
+                style={mine
+                  ? { background: 'var(--cuidar-verde-institucional)', color: '#FFFFFF' }
+                  : { background: '#FFFFFF', border: '1px solid var(--cuidar-borde)', color: 'var(--cuidar-texto)' }}>
                 {m.attachmentPathname && <Attachment m={m} mine={mine} />}
                 {m.body && <p className={m.attachmentPathname ? 'mt-1' : ''}>{m.body}</p>}
-                <div className={`text-[10px] mt-1 ${mine ? 'text-teal-100' : 'text-gray-400'}`}>
+                <div className="text-[10px] mt-1" style={{ color: mine ? 'rgba(246,248,246,0.65)' : 'var(--cuidar-gris-suave)' }}>
                   {new Date(m.createdAt).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' })}
                 </div>
               </div>
@@ -244,16 +252,20 @@ function ConversationThread({ id, userId, onBack, onChanged }) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="px-6 py-3 border-t border-gray-100 bg-white space-y-2">
+      <div className="px-6 py-3 space-y-2" style={{ borderTop: '1px solid var(--cuidar-borde)', background: '#FFFFFF' }}>
         <div className="flex items-center justify-between gap-3 text-xs flex-wrap">
           <button onClick={toggleAgree}
-            className={`flex items-center gap-1.5 font-semibold px-3 py-1.5 rounded-full transition-colors ${
-              conversation.myAgreement ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}>
+            className="flex items-center gap-1.5 font-semibold px-3 py-1.5 transition-colors"
+            style={conversation.myAgreement
+              ? { background: '#dcfce7', color: '#15803d', border: '1px solid #86efac' }
+              : { background: 'var(--cuidar-nieve)', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)' }}>
             {conversation.myAgreement ? <CheckCircle2 className="w-3.5 h-3.5"/> : <Circle className="w-3.5 h-3.5"/>}
             {conversation.myAgreement ? 'Contratación confirmada por vos' : 'Confirmar cierre de contratación'}
           </button>
-          <button onClick={clearHistory} className="flex items-center gap-1 text-gray-400 hover:text-red-500">
+          <button onClick={clearHistory} className="flex items-center gap-1 transition-colors"
+            style={{ color: 'var(--cuidar-gris-suave)' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--cuidar-gris-suave)'}>
             <Trash2 className="w-3.5 h-3.5"/> Borrar historial
           </button>
         </div>
@@ -266,14 +278,23 @@ function ConversationThread({ id, userId, onBack, onChanged }) {
         <form onSubmit={send} className="flex gap-2">
           <input ref={fileInputRef} type="file" accept={ATTACHMENT_ACCEPT} className="hidden" onChange={handleFile} />
           <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingFile}
-            className="flex items-center justify-center w-10 h-10 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 disabled:opacity-50 flex-shrink-0"
+            className="flex items-center justify-center w-10 h-10 disabled:opacity-50 flex-shrink-0 transition-colors"
+            style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)', color: 'var(--cuidar-gris-suave)' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cuidar-verde-institucional)'; e.currentTarget.style.color = 'var(--cuidar-verde-institucional)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--cuidar-borde)'; e.currentTarget.style.color = 'var(--cuidar-gris-suave)' }}
             title="Adjuntar foto o PDF">
             {uploadingFile ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
           </button>
           <input value={text} onChange={e => setText(e.target.value)} placeholder="Escribí un mensaje…"
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+            className="flex-1 px-4 py-2.5 text-sm outline-none"
+            style={{ border: '1px solid var(--cuidar-borde)', color: 'var(--cuidar-texto)' }}
+            onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+            onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}/>
           <button type="submit" disabled={sending || !text.trim()}
-            className="flex items-center justify-center w-10 h-10 bg-teal-500 text-white rounded-xl hover:bg-teal-600 disabled:opacity-50 flex-shrink-0">
+            className="flex items-center justify-center w-10 h-10 disabled:opacity-50 flex-shrink-0 text-white"
+            style={{ background: 'var(--cuidar-verde-institucional)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
             <Send className="w-4 h-4"/>
           </button>
         </form>
