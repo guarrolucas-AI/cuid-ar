@@ -44,8 +44,8 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-3">
               {[
-                { Icon: Instagram, href: '#', label: 'Instagram' },
-                { Icon: Facebook, href: '#', label: 'Facebook' },
+                { Icon: Instagram, href: 'https://www.instagram.com/cuidar360.oficial/', label: 'Instagram' },
+                { Icon: Facebook, href: 'https://www.facebook.com/share/19Uq2T2ZcK/', label: 'Facebook' },
                 { Icon: Linkedin, href: '#', label: 'LinkedIn' },
               ].map(({ Icon, href, label }) => (
                 <a
