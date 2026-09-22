@@ -76,6 +76,35 @@ export const tpl = {
       </div>`,
   }),
 
+  identityApproved: (name) => ({
+    subject: 'CuidAR 360 — Tus antecedentes fueron verificados',
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h2 style="color:#1F4D3A">¡Tu cuenta está habilitada!</h2>
+        <p>Hola <strong>${name}</strong>,</p>
+        <p>El equipo de CuidAR 360 revisó y aprobó tu Certificado de Antecedentes Penales.</p>
+        <p>Ya podés recibir contactos de familias y utilizar todas las funciones de la plataforma.</p>
+        <a href="https://www.cuidar360.com.ar/dashboard"
+           style="display:inline-block;margin-top:16px;padding:12px 24px;background:#1F4D3A;color:#fff;text-decoration:none;font-weight:bold">
+          Ir a mi panel
+        </a>
+        <p style="margin-top:24px;font-size:12px;color:#888">CuidAR 360 — Buenos Aires, Argentina</p>
+      </div>`,
+  }),
+
+  identityRejected: (name, notes) => ({
+    subject: 'CuidAR 360 — Revisión de tu certificado de antecedentes',
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h2 style="color:#1F4D3A">Información sobre tu verificación</h2>
+        <p>Hola <strong>${name}</strong>,</p>
+        <p>El equipo de CuidAR 360 revisó tu certificado y encontró una observación que requiere tu atención.</p>
+        ${notes ? `<div style="margin:16px 0;padding:16px;background:#fef2f2;border-left:4px solid #dc2626"><strong>Observación:</strong> ${notes}</div>` : ''}
+        <p>Por favor comunicate con el equipo de soporte en <a href="mailto:info@cuidar360.com.ar">info@cuidar360.com.ar</a> para resolver esta situación.</p>
+        <p style="margin-top:24px;font-size:12px;color:#888">CuidAR 360 — Buenos Aires, Argentina</p>
+      </div>`,
+  }),
+
   verified: (name) => ({
     subject: 'CUID_AR — Tu perfil fue verificado',
     html: `

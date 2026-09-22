@@ -5,6 +5,7 @@ const CHAT_TOKEN = process.env.CHAT_READ_WRITE_TOKEN
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const MAX_CERT_BYTES = 5 * 1024 * 1024
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const ATTACHMENT_TYPES = [...IMAGE_TYPES, 'application/pdf']
 
@@ -52,4 +53,27 @@ export async function streamChatAttachment(pathname) {
   const result = await get(pathname, { access: 'private', token: CHAT_TOKEN })
   if (result?.statusCode !== 200) return null
   return result
+}
+
+// Sube el Certificado de Antecedentes Penales en PDF. Usa el mismo store
+// privado que los adjuntos de chat. Solo el admin puede descargarlo vía
+// el endpoint /api/admin/certificate/:userId; nunca se expone una URL pública.
+export async function uploadCertificate(userId, buffer, mimeType) {
+  if (mimeType !== 'application/pdf') throw new Error('Solo se acepta PDF para el certificado de antecedentes')
+  if (buffer.length > MAX_CERT_BYTES) throw new Error('El archivo no puede superar 5 MB')
+
+  const blob = await put(`certificates/${userId}.pdf`, buffer, {
+    access: 'private',
+    token: CHAT_TOKEN,
+    contentType: 'application/pdf',
+    allowOverwrite: true,
+  })
+  return blob.pathname
+}
+
+// Descarga el certificado para servirlo al admin. El caller ya validó
+// que el solicitante tiene rol admin — acá no se repite ese chequeo.
+export async function streamCertificate(userId) {
+  const pathname = `certificates/${userId}.pdf`
+  return get(pathname, { access: 'private', token: CHAT_TOKEN }).catch(() => null)
 }

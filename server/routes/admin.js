@@ -4,6 +4,7 @@ import { auth } from '../middleware/auth.js'
 import { adminOnly } from '../middleware/adminOnly.js'
 import { sendEmail, tpl } from '../lib/email.js'
 import { fetchCasasParticularesRates } from '../lib/officialRates.js'
+import { streamCertificate } from '../lib/storage.js'
 
 const router = Router()
 router.use(auth, adminOnly)
@@ -280,22 +281,73 @@ router.get('/identity-checks', async (req, res) => {
 })
 
 // PATCH /api/admin/identity-checks/:userId — actualiza status + notas
+// Notifica por email cuando el estado cambia a 'clear' (aprobado) o 'flagged' (rechazado).
 router.patch('/identity-checks/:userId', async (req, res) => {
   try {
     const { status, notes } = req.body
     const VALID = ['pending', 'clear', 'flagged', 'manual_review']
     if (!VALID.includes(status)) return res.status(400).json({ error: 'Status inválido' })
-    const updated = await prisma.identityCheck.update({
-      where: { userId: req.params.userId },
-      data: {
-        status,
-        notes: notes ?? null,
-        resolvedAt: status !== 'pending' ? new Date() : null,
-        resolvedBy: status !== 'pending' ? req.user.email : null,
-      },
-    })
+
+    const [updated, userRecord] = await Promise.all([
+      prisma.identityCheck.update({
+        where: { userId: req.params.userId },
+        data: {
+          status,
+          notes: notes ?? null,
+          resolvedAt: status !== 'pending' ? new Date() : null,
+          resolvedBy: status !== 'pending' ? req.user.email : null,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: req.params.userId },
+        select: {
+          email: true,
+          professional: { select: { name: true } },
+          parent: { select: { name: true } },
+        },
+      }),
+    ])
+
+    if (userRecord) {
+      const name = userRecord.professional?.name ?? userRecord.parent?.name ?? userRecord.email
+      if (status === 'clear') {
+        const { subject, html } = tpl.identityApproved(name)
+        sendEmail({ to: userRecord.email, subject, html }).catch(console.error)
+      } else if (status === 'flagged') {
+        const { subject, html } = tpl.identityRejected(name, notes)
+        sendEmail({ to: userRecord.email, subject, html }).catch(console.error)
+      }
+    }
+
     await logAudit(req, `identity.${status}`, { targetType: 'User', targetId: req.params.userId, detail: notes })
     res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/admin/certificate/:userId — descarga el PDF del certificado de
+// antecedentes desde el store privado de Vercel Blob. El archivo NUNCA se
+// expone con una URL pública — siempre pasa por este endpoint que valida
+// que el solicitante es admin (garantizado por router.use(auth, adminOnly)).
+router.get('/certificate/:userId', async (req, res) => {
+  try {
+    const result = await streamCertificate(req.params.userId)
+    if (!result) return res.status(404).json({ error: 'Certificado no encontrado' })
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="certificado-${req.params.userId}.pdf"`)
+    if (result.body) {
+      const reader = result.body.getReader()
+      const pump = async () => {
+        const { done, value } = await reader.read()
+        if (done) { res.end(); return }
+        res.write(Buffer.from(value))
+        return pump()
+      }
+      await pump()
+    } else {
+      res.status(500).json({ error: 'No se pudo leer el archivo' })
+    }
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

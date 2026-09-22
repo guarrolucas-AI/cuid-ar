@@ -2,7 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { prisma } from '../lib/prisma.js'
 import { auth } from '../middleware/auth.js'
-import { uploadProfilePhoto } from '../lib/storage.js'
+import { uploadProfilePhoto, uploadCertificate } from '../lib/storage.js'
 
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
@@ -177,6 +177,56 @@ router.patch('/alert-config', auth, async (req, res) => {
     res.json(config)
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/professional/identity-status — estado de verificación de identidad
+// del profesional autenticado. Solo expone lo que el profesional necesita
+// ver: status, si ya subió el PDF, y observaciones si fue marcado 'flagged'.
+router.get('/identity-status', auth, async (req, res) => {
+  try {
+    const check = await prisma.identityCheck.findUnique({
+      where: { userId: req.user.id },
+      select: { status: true, certificadoUrl: true, notes: true },
+    })
+    if (!check) return res.json({ status: 'pending', hasCertificado: false, notes: null })
+    res.json({
+      status: check.status,
+      hasCertificado: !!check.certificadoUrl,
+      notes: check.status === 'flagged' ? check.notes : null,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/professional/certificate — sube o reemplaza el PDF del
+// Certificado de Antecedentes Penales. Solo PDF, máx 5 MB.
+// El path se guarda en IdentityCheck.certificadoUrl y el status pasa a
+// 'manual_review' si estaba en 'pending' o 'flagged' (para que el admin
+// lo revise de nuevo cuando se reenvía).
+router.post('/certificate', auth, upload.single('certificate'), async (req, res) => {
+  try {
+    if (req.user.role !== 'profesional')
+      return res.status(403).json({ error: 'Solo para profesionales' })
+    if (!req.file) return res.status(400).json({ error: 'Falta el archivo PDF' })
+    if (req.file.mimetype !== 'application/pdf')
+      return res.status(400).json({ error: 'Solo se acepta PDF' })
+
+    const pathname = await uploadCertificate(req.user.id, req.file.buffer, req.file.mimetype)
+
+    const existing = await prisma.identityCheck.findUnique({ where: { userId: req.user.id } })
+    const nextStatus = existing && existing.status === 'clear' ? 'clear' : 'manual_review'
+
+    await prisma.identityCheck.upsert({
+      where: { userId: req.user.id },
+      create: { userId: req.user.id, status: 'manual_review', certificadoUrl: pathname },
+      update: { certificadoUrl: pathname, status: nextStatus },
+    })
+
+    res.json({ ok: true, status: nextStatus })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
   }
 })
 

@@ -33,7 +33,12 @@ router.post('/register', async (req, res) => {
       address, travelRadiusKm, maxDistanceKm,
       dni, cuil,
       credentials, // [{ type: 'matricula_nacional'|'matricula_provincial', number, province? }]
+      consentimientoAntecedentes,
     } = req.body
+
+    // Consentimiento Ley 25.326 — obligatorio para todos los roles
+    if (!consentimientoAntecedentes)
+      return res.status(400).json({ error: 'Debés aceptar el tratamiento de datos personales (Ley 25.326) para continuar.' })
 
     // Validaciones de identidad — obligatorias para todos los roles
     if (!dni || !validateDni(dni)) return res.status(400).json({ error: 'DNI inválido. Ingresá 7 u 8 dígitos sin puntos.' })
@@ -73,6 +78,9 @@ router.post('/register', async (req, res) => {
         role,
         dni:  dniClean,
         cuil: cuilClean,
+        consentimientoAntecedentes: true,
+        fechaConsentimiento: new Date(),
+        ipRegistro: req.ip ?? req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? null,
         identityCheck: { create: { status: 'pending' } },
         ...(role === 'profesional' && {
           professional: {

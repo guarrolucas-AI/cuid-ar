@@ -759,10 +759,31 @@ function VerificationCard({ check, saving, onStatusChange, onCredVerify }) {
             )}
           </div>
         </div>
-        <span className="text-xs font-semibold px-2 py-1 flex-shrink-0"
-          style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}`, borderRadius: '999px' }}>
-          {st.label}
-        </span>
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+          <span className="text-xs font-semibold px-2 py-1"
+            style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}`, borderRadius: '999px' }}>
+            {st.label}
+          </span>
+          {check.certificadoUrl && (
+            <button type="button"
+              onClick={async () => {
+                try {
+                  const res = await fetch(`${API_BASE}/api/admin/certificate/${check.userId}`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                  })
+                  if (!res.ok) { alert('No se pudo descargar el certificado'); return }
+                  const blob = await res.blob()
+                  const url = URL.createObjectURL(blob)
+                  window.open(url, '_blank')
+                  setTimeout(() => URL.revokeObjectURL(url), 10000)
+                } catch { alert('Error al abrir el certificado') }
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2 py-1 transition-colors"
+              style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #93C5FD' }}>
+              <ClipboardList className="w-3.5 h-3.5" /> Ver certificado
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Matrículas profesionales */}
@@ -828,10 +849,14 @@ function VerificationCard({ check, saving, onStatusChange, onCredVerify }) {
         <button disabled={saving[check.userId]}
           onClick={() => onStatusChange(check.userId, status, notes)}
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold disabled:opacity-60 text-white transition-colors flex-shrink-0"
-          style={{ background: 'var(--cuidar-verde-institucional)' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
-          <Save className="w-4 h-4"/>{saving[check.userId] ? 'Guardando…' : 'Guardar'}
+          style={{ background: status === 'flagged' ? '#DC2626' : 'var(--cuidar-verde-institucional)' }}
+          onMouseEnter={e => e.currentTarget.style.background = status === 'flagged' ? '#B91C1C' : 'var(--cuidar-verde-700)'}
+          onMouseLeave={e => e.currentTarget.style.background = status === 'flagged' ? '#DC2626' : 'var(--cuidar-verde-institucional)'}>
+          <Save className="w-4 h-4"/>
+          {saving[check.userId] ? 'Guardando…'
+            : status === 'clear'   ? 'Aprobar Cuenta'
+            : status === 'flagged' ? 'Rechazar con Observaciones'
+            : 'Guardar'}
         </button>
       </div>
     </div>

@@ -18,6 +18,10 @@ model User {
   // Identificación — PRIVADO: solo visible por el propio usuario y el admin
   dni                 String?
   cuil                String?
+  // Consentimiento Ley 25.326 para procesamiento de datos y antecedentes
+  consentimientoAntecedentes Boolean   @default(false)
+  fechaConsentimiento        DateTime?
+  ipRegistro                 String?
   professional        Professional?
   parent              Parent?
   passwordResetTokens PasswordResetToken[]
@@ -230,16 +234,19 @@ model ProfessionalCredential {
 
 // Verificación de antecedentes y estado de identidad.
 // status: "pending" | "clear" | "flagged" | "manual_review"
-// Solo visible al propio usuario (su estado) y al admin (todo).
+// Solo visible al propio usuario (su estado) y al admin (todo, incluyendo el PDF).
 model IdentityCheck {
-  id          String    @id @default(uuid())
-  userId      String    @unique
-  user        User      @relation(fields: [userId], references: [id])
-  status      String    @default("pending")
-  requestedAt DateTime  @default(now())
-  resolvedAt  DateTime?
-  resolvedBy  String?
-  notes       String?
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id])
+  status         String    @default("pending")
+  requestedAt    DateTime  @default(now())
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  notes          String?
+  // Ruta del PDF del Certificado de Antecedentes Penales en el store privado.
+  // Nunca se expone fuera del endpoint admin — solo el admin puede descargarlo.
+  certificadoUrl String?
 }
 
 model AdminAuditLog {

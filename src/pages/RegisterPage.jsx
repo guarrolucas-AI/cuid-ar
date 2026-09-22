@@ -45,7 +45,10 @@ const DEFAULTS = {
   address: '', maxDistanceKm: '15',
   dni: '', cuil: '',
   credentials: [], // [{ type: 'matricula_nacional'|'matricula_provincial', number: '', province: '' }]
+  consentimiento: false,
 }
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 export default function RegisterPage() {
   const { register }  = useAuth()
@@ -53,6 +56,7 @@ export default function RegisterPage() {
   const [searchParams] = useSearchParams()
   const preRole       = VALID_ROLES.includes(searchParams.get('role')) ? searchParams.get('role') : ''
   const [form, setForm]   = useState({ ...DEFAULTS, role: preRole })
+  const [certificadoPdf, setCertificadoPdf] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -86,7 +90,9 @@ export default function RegisterPage() {
     setError('')
     if (form.password !== form.confirmPassword) return setError('Las contraseñas no coinciden')
     if (!form.role) return setError('Elegí un tipo de cuenta')
+    if (!form.consentimiento) return setError('Debés aceptar el tratamiento de datos personales (Ley 25.326) para continuar.')
     if (form.role === 'profesional' && form.categories.length === 0) return setError('Elegí al menos una especialidad')
+    if (form.role === 'profesional' && !certificadoPdf) return setError('Debés adjuntar tu Certificado de Antecedentes Penales en PDF.')
     // Validaciones de identidad
     const dniClean = form.dni.replace(/\./g, '').trim()
     if (!/^\d{7,8}$/.test(dniClean)) return setError('DNI inválido — ingresá 7 u 8 dígitos sin puntos.')
@@ -97,7 +103,18 @@ export default function RegisterPage() {
       return setError('Completá el número de todas las matrículas ingresadas.')
     setLoading(true)
     try {
-      await register(form)
+      await register({ ...form, consentimientoAntecedentes: form.consentimiento })
+      // Paso 2: subir PDF del certificado (solo profesionales)
+      if (form.role === 'profesional' && certificadoPdf) {
+        const token = localStorage.getItem('token')
+        const fd = new FormData()
+        fd.append('certificate', certificadoPdf)
+        await fetch(`${API_BASE}/api/professional/certificate`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        })
+      }
       navigate('/dashboard')
     } catch (err) {
       setError(err.message)
@@ -326,6 +343,30 @@ export default function RegisterPage() {
                     {RADIUS_OPTIONS.map(r => <option key={r} value={r}>Hasta {r} km</option>)}
                   </select>
                 </div>
+
+                {/* Certificado de Antecedentes Penales — obligatorio para profesionales */}
+                <div className="p-4" style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)' }}>
+                  <p className="text-sm font-bold mb-1" style={{ color: 'var(--cuidar-tinta)' }}>
+                    Certificado de Antecedentes Penales <span style={{ color: '#D9544D' }}>*</span>
+                  </p>
+                  <p className="text-xs mb-3" style={{ color: 'var(--cuidar-gris-suave)' }}>
+                    Adjuntá el PDF emitido por el{' '}
+                    <a href="https://www.argentina.gob.ar/justicia/reincidencia/antecedentespenales"
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ color: 'var(--cuidar-verde-institucional)', textDecoration: 'underline' }}>
+                      Registro Nacional de Reincidencia
+                    </a>
+                    . El equipo de CuidAR 360 lo revisará antes de habilitar tu cuenta. Solo PDF, máx 5 MB.
+                  </p>
+                  <input type="file" accept="application/pdf"
+                    onChange={e => setCertificadoPdf(e.target.files?.[0] ?? null)}
+                    className="w-full text-sm" style={{ color: 'var(--cuidar-texto)' }} />
+                  {certificadoPdf && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--cuidar-verde-institucional)' }}>
+                      ✓ {certificadoPdf.name}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -354,6 +395,20 @@ export default function RegisterPage() {
                 </div>
               </div>
             )}
+
+            {/* Consentimiento Ley 25.326 — obligatorio para todos los roles */}
+            <div className="flex items-start gap-3 pt-4" style={{ borderTop: '1px solid var(--cuidar-borde)' }}>
+              <input type="checkbox" id="consentimiento" checked={form.consentimiento}
+                onChange={e => set('consentimiento', e.target.checked)}
+                className="w-4 h-4 mt-0.5 flex-shrink-0 accent-[#1F4D3A]" required />
+              <label htmlFor="consentimiento" className="text-xs leading-relaxed cursor-pointer" style={{ color: 'var(--cuidar-gris-suave)' }}>
+                Acepto que CuidAR 360 trate mis datos personales, incluyendo DNI, CUIL
+                {form.role === 'profesional' ? ' y Certificado de Antecedentes Penales' : ''}, con fines de
+                verificación de identidad, conforme a la{' '}
+                <strong style={{ color: 'var(--cuidar-tinta)' }}>Ley 25.326 de Protección de Datos Personales</strong>.
+                Los datos son confidenciales y no se compartirán con terceros sin tu consentimiento.
+              </label>
+            </div>
 
             <button type="submit" disabled={loading || !form.role}
               className="w-full py-3.5 text-white font-bold text-sm mt-2 transition-colors disabled:opacity-50"
