@@ -609,6 +609,7 @@ const AUDIT_ACTION_LABELS = {
   'config.update': 'Actualizó configuración',
   'rates.update': 'Actualizó aranceles',
   'rates.fetch-official': 'Actualizó aranceles desde ARCA',
+  'rates.auto-fetch': 'Aranceles actualizados automáticamente (cron)',
   'professional.verify': 'Verificó profesional',
   'professional.unverify': 'Quitó verificación',
   'subscription.activate': 'Activó suscripción',
