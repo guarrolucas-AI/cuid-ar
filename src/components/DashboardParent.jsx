@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import ChatPanel from './ChatPanel'
 import PublishJobModal from './PublishJobModal'
 import { CAT_STYLES } from '../lib/categoryStyles'
+import IdentityBanner from './IdentityBanner'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -136,6 +137,9 @@ export default function DashboardParent({ user, profile: init }) {
             </span>
         }
       </div>
+
+      {/* Banner de verificación de identidad */}
+      <IdentityBanner notify={notify} />
 
       {!subscribed && <ParentPaymentWall />}
 

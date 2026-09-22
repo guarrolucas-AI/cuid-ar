@@ -177,17 +177,20 @@ router.post('/notify', auth, async (req, res) => {
       return res.status(403).json({ error: 'Se requiere suscripción activa' })
     const { professionalId, category } = req.body
 
-    const [professional, parent, identityCheck] = await Promise.all([
+    const [professional, parent, identityCheckPro, identityCheckParent] = await Promise.all([
       prisma.professional.findUnique({ where: { userId: professionalId }, include: { user: true } }),
       prisma.parent.findUnique({ where: { userId: req.user.id } }),
       prisma.identityCheck.findUnique({ where: { userId: professionalId } }),
+      prisma.identityCheck.findUnique({ where: { userId: req.user.id } }),
     ])
 
     if (!professional || !parent) return res.status(404).json({ error: 'Datos no encontrados' })
     if (!professional.verified || professional.user.status !== 'subscribed')
       return res.status(403).json({ error: 'Profesional no disponible' })
-    if (!identityCheck || identityCheck.status !== 'clear')
+    if (!identityCheckPro || identityCheckPro.status !== 'clear')
       return res.status(403).json({ error: 'El profesional aún no completó la verificación de identidad.', blockReason: 'identity_pending' })
+    if (!identityCheckParent || identityCheckParent.status !== 'clear')
+      return res.status(403).json({ error: 'Tu cuenta aún no completó la verificación de identidad. Revisá tu panel para subir el certificado.', blockReason: 'identity_pending' })
 
     await prisma.contactRequest.create({
       data: { professionalId: professional.userId, parentId: parent.userId, category },
@@ -224,16 +227,19 @@ router.post('/guard-request', auth, async (req, res) => {
     if (!professionalId || !category || !startTime || !duration || !reason)
       return res.status(400).json({ error: 'Faltan campos obligatorios' })
 
-    const [professional, parent, identityCheckGuard] = await Promise.all([
+    const [professional, parent, identityCheckGuardPro, identityCheckGuardParent] = await Promise.all([
       prisma.professional.findUnique({ where: { userId: professionalId }, include: { user: true } }),
       prisma.parent.findUnique({ where: { userId: req.user.id } }),
       prisma.identityCheck.findUnique({ where: { userId: professionalId } }),
+      prisma.identityCheck.findUnique({ where: { userId: req.user.id } }),
     ])
     if (!professional || !parent) return res.status(404).json({ error: 'Datos no encontrados' })
     if (!professional.verified || professional.user.status !== 'subscribed')
       return res.status(403).json({ error: 'Profesional no disponible' })
-    if (!identityCheckGuard || identityCheckGuard.status !== 'clear')
+    if (!identityCheckGuardPro || identityCheckGuardPro.status !== 'clear')
       return res.status(403).json({ error: 'El profesional aún no completó la verificación de identidad.', blockReason: 'identity_pending' })
+    if (!identityCheckGuardParent || identityCheckGuardParent.status !== 'clear')
+      return res.status(403).json({ error: 'Tu cuenta aún no completó la verificación de identidad. Revisá tu panel para subir el certificado.', blockReason: 'identity_pending' })
 
     await prisma.contactRequest.create({
       data: { professionalId: professional.userId, parentId: parent.userId, category },

@@ -207,8 +207,6 @@ router.get('/identity-status', auth, async (req, res) => {
 // lo revise de nuevo cuando se reenvía).
 router.post('/certificate', auth, upload.single('certificate'), async (req, res) => {
   try {
-    if (req.user.role !== 'profesional')
-      return res.status(403).json({ error: 'Solo para profesionales' })
     if (!req.file) return res.status(400).json({ error: 'Falta el archivo PDF' })
     if (req.file.mimetype !== 'application/pdf')
       return res.status(400).json({ error: 'Solo se acepta PDF' })
