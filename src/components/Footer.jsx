@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Heart, Instagram, Facebook, Linkedin, Mail, Phone, MapPin } from 'lucide-react'
+import { Heart, Instagram, Facebook, Linkedin, Mail, MapPin } from 'lucide-react'
 import { Isotipo } from '../lib/Isotipo'
 
 const servicios = [
@@ -98,14 +98,8 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Mail className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--cuidar-verde-300)' }} />
-                <a href="mailto:hola@cuid-ar.com" className="text-gray-400 hover:text-[#9FB6A8] transition-colors">
-                  hola@cuid-ar.com
-                </a>
-              </li>
-              <li className="flex items-center gap-2 text-sm">
-                <Phone className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--cuidar-verde-300)' }} />
-                <a href="tel:+541100000000" className="text-gray-400 hover:text-[#9FB6A8] transition-colors">
-                  +54 11 0000-0000
+                <a href="mailto:info@cuidar360.com.ar" className="text-gray-400 hover:text-[#9FB6A8] transition-colors">
+                  info@cuidar360.com.ar
                 </a>
               </li>
             </ul>
