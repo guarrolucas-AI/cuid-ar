@@ -21,6 +21,8 @@ const allowed = [
   process.env.FRONTEND_URL,
   'http://localhost:5173',
   'https://cuid-ar-nine.vercel.app',
+  'https://cuidar360.com.ar',
+  'https://www.cuidar360.com.ar',
 ].filter(Boolean)
 
 app.use(cors({
