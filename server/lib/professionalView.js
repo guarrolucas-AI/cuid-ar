@@ -23,6 +23,9 @@ export { calcProfileScore }
 
 export function toProfessionalView(pro, viewerSubscribed, officialRate = null) {
   const profileScore = calcProfileScore(pro)
+  // Solo badge de verificación de credenciales — NUNCA el número de matrícula
+  const hasVerifiedCredential = (pro.credentials ?? []).some((c) => c.verifiedAt != null)
+
   const base = {
     userId: pro.userId,
     name: pro.name,
@@ -30,11 +33,15 @@ export function toProfessionalView(pro, viewerSubscribed, officialRate = null) {
     categories: pro.categories ?? [],
     hourlyRate: pro.hourlyRate,
     verified: pro.verified,
+    hasVerifiedCredential,
     onDuty: pro.onDuty ?? false,
     photoUrl: pro.photoUrl ?? null,
     profileScore,
     profileComplete: profileScore === 5,
     ...(pro.distanceKm != null && { distanceKm: Math.round(pro.distanceKm * 10) / 10 }),
+    // Campos que NUNCA salen en vista pública — declarados explícitamente
+    // para evitar que un spread accidental los exponga:
+    // dni, cuil, phone, address, credentials (números), identityCheck
   }
 
   if (!viewerSubscribed) return base

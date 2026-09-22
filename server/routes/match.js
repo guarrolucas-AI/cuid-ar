@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js'
 import { auth, optionalAuth } from '../middleware/auth.js'
 import { sendEmail, tpl } from '../lib/email.js'
 import { toProfessionalView, calcProfileScore } from '../lib/professionalView.js'
+import { FALLBACK_RATES } from '../lib/officialRates.js'
 
 const router = Router()
 
@@ -47,12 +48,17 @@ function pickOfficialRate(pro, searchedCategory, officialRates) {
 router.get('/rates', async (req, res) => {
   try {
     const [rows, toleranceArs] = await Promise.all([getOfficialRateRows(), getRateTolerance()])
-    const rates = Object.fromEntries(rows.map((r) => [r.category, r.officialRate]))
-    const details = Object.fromEntries(rows.map((r) => [r.category, {
+    const dbMap = Object.fromEntries(rows.map((r) => [r.category, {
       officialRate: r.officialRate,
       officialRateMonthly: r.officialRateMonthly,
       source: r.source,
     }]))
+    // Merge: fallback base + DB pisa donde hay datos reales
+    const CATEGORIES = ['infantil', 'pedagogico', 'salud', 'terapeutico', 'limpieza']
+    const details = Object.fromEntries(
+      CATEGORIES.map((cat) => [cat, { ...(FALLBACK_RATES[cat] ?? {}), ...(dbMap[cat] ?? {}) }])
+    )
+    const rates = Object.fromEntries(CATEGORIES.map((cat) => [cat, details[cat].officialRate]))
     res.json({ rates, details, toleranceArs })
   } catch (err) {
     res.status(500).json({ error: err.message })

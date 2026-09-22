@@ -7,10 +7,13 @@ import { uploadProfilePhoto } from '../lib/storage.js'
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
 
-// GET /api/professional/me
+// GET /api/professional/me — incluye credentials (con número, solo para el propio usuario)
 router.get('/me', auth, async (req, res) => {
   try {
-    const pro = await prisma.professional.findUnique({ where: { userId: req.user.id } })
+    const pro = await prisma.professional.findUnique({
+      where: { userId: req.user.id },
+      include: { credentials: { orderBy: { createdAt: 'asc' } } },
+    })
     if (!pro) return res.status(404).json({ error: 'Perfil no encontrado' })
     res.json(pro)
   } catch (err) {
@@ -36,6 +39,37 @@ router.patch('/me', auth, async (req, res) => {
         ...(categories && { categories }),
         ...(bio        !== undefined && { bio: bio || null }),
       },
+    })
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PUT /api/professional/credentials — reemplaza las matrículas del profesional
+// (solo para categorías que las requieren; la verificación la hace el admin)
+router.put('/credentials', auth, async (req, res) => {
+  try {
+    const { credentials } = req.body // [{ type, number, province? }]
+    if (!Array.isArray(credentials) || credentials.length === 0)
+      return res.status(400).json({ error: 'Ingresá al menos una matrícula' })
+    for (const c of credentials) {
+      if (!c.type || !c.number?.trim())
+        return res.status(400).json({ error: 'Completá tipo y número de cada matrícula' })
+    }
+    // Borra las anteriores y recrea — más simple que un diff de N credenciales
+    await prisma.professionalCredential.deleteMany({ where: { professionalId: req.user.id } })
+    await prisma.professionalCredential.createMany({
+      data: credentials.map(({ type, number, province }) => ({
+        professionalId: req.user.id,
+        type,
+        number: number.trim(),
+        province: province?.trim() || null,
+      })),
+    })
+    const updated = await prisma.professionalCredential.findMany({
+      where: { professionalId: req.user.id },
+      orderBy: { createdAt: 'asc' },
     })
     res.json(updated)
   } catch (err) {

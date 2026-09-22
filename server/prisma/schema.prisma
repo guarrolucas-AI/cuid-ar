@@ -15,9 +15,13 @@ model User {
   role                String
   status              String               @default("active")
   createdAt           DateTime             @default(now())
+  // Identificación — PRIVADO: solo visible por el propio usuario y el admin
+  dni                 String?
+  cuil                String?
   professional        Professional?
   parent              Parent?
   passwordResetTokens PasswordResetToken[]
+  identityCheck       IdentityCheck?
 }
 
 model Professional {
@@ -51,6 +55,7 @@ model Professional {
   applications    JobApplication[]
   alertConfig     ProfessionalAlertConfig?
   notifications   Notification[]
+  credentials     ProfessionalCredential[]
 }
 
 model Parent {
@@ -205,6 +210,36 @@ model Notification {
   jobPostId      String?
   read           Boolean      @default(false)
   createdAt      DateTime     @default(now())
+}
+
+// Matrícula o credencial habilitante. Solo para categorías que la requieren
+// (salud, terapeutico). Visible al propio profesional y al admin; nunca al público.
+model ProfessionalCredential {
+  id             String       @id @default(uuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [userId])
+  type           String       // "matricula_nacional" | "matricula_provincial"
+  number         String
+  province       String?      // solo si type = "matricula_provincial"
+  verifiedAt     DateTime?
+  verifiedBy     String?      // email del admin que verificó
+  createdAt      DateTime     @default(now())
+
+  @@index([professionalId])
+}
+
+// Verificación de antecedentes y estado de identidad.
+// status: "pending" | "clear" | "flagged" | "manual_review"
+// Solo visible al propio usuario (su estado) y al admin (todo).
+model IdentityCheck {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id])
+  status      String    @default("pending")
+  requestedAt DateTime  @default(now())
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  notes       String?
 }
 
 model AdminAuditLog {

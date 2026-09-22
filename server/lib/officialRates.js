@@ -1,3 +1,15 @@
+// Valores de referencia estáticos usados como fallback cuando la DB aún no
+// tiene datos cargados o el fetcher de ARCA falla. El admin puede pisar
+// cualquier categoría desde el panel; estos valores no se escriben a la DB,
+// solo se devuelven en el merge del endpoint /api/match/rates.
+export const FALLBACK_RATES = {
+  infantil:    { officialRate: null, officialRateMonthly: null, source: 'Pendiente — el admin debe actualizar desde ARCA' },
+  limpieza:    { officialRate: null, officialRateMonthly: null, source: 'Pendiente — el admin debe actualizar desde ARCA' },
+  pedagogico:  { officialRate: null, officialRateMonthly: null, source: 'Sin nomenclador nacional único — a confirmar por el admin' },
+  terapeutico: { officialRate: null, officialRateMonthly: null, source: 'Sin nomenclador nacional único — a confirmar por el admin' },
+  salud:       { officialRate: null, officialRateMonthly: null, source: 'Sin nomenclador nacional único — a confirmar por el admin' },
+}
+
 // IMPORTANTE: usar pdf-parse@1.x, no 2.x. La v2 trae pdfjs-dist con soporte
 // de renderizado (canvas), que depende de @napi-rs/canvas — un binario
 // nativo que no existe en el runtime serverless de Vercel y tira

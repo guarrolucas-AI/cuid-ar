@@ -9,22 +9,58 @@ import { geocodeAddress } from '../lib/geocode.js'
 
 const router = Router()
 
+// Validación de formato DNI (7-8 dígitos) y CUIL (11 dígitos con dígito verificador)
+function validateDni(raw) {
+  return /^\d{7,8}$/.test((raw ?? '').replace(/\./g, '').trim())
+}
+function validateCuil(raw) {
+  const clean = (raw ?? '').replace(/[-\s.]/g, '').trim()
+  if (!/^\d{11}$/.test(clean)) return false
+  const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
+  const sum = weights.reduce((acc, w, i) => acc + w * parseInt(clean[i]), 0)
+  const rem = sum % 11
+  const verifier = rem === 0 ? 0 : rem === 1 ? 9 : 11 - rem
+  return parseInt(clean[10]) === verifier
+}
+
+const CATEGORIES_REQUIRING_CREDENTIAL = ['salud', 'terapeutico']
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
     const {
       email, password, role, name, phone, zone, categories, hourlyRate,
       address, travelRadiusKm, maxDistanceKm,
+      dni, cuil,
+      credentials, // [{ type: 'matricula_nacional'|'matricula_provincial', number, province? }]
     } = req.body
+
+    // Validaciones de identidad — obligatorias para todos los roles
+    if (!dni || !validateDni(dni)) return res.status(400).json({ error: 'DNI inválido. Ingresá 7 u 8 dígitos sin puntos.' })
+    if (!cuil || !validateCuil(cuil)) return res.status(400).json({ error: 'CUIL inválido. Verificá el formato XX-XXXXXXXX-X.' })
 
     if (role === 'profesional' && (!Array.isArray(categories) || categories.length === 0)) {
       return res.status(400).json({ error: 'Elegí al menos una especialidad' })
+    }
+
+    // Matrícula obligatoria para salud y terapéutico
+    const needsCredential = role === 'profesional' &&
+      (categories ?? []).some((c) => CATEGORIES_REQUIRING_CREDENTIAL.includes(c))
+    if (needsCredential) {
+      if (!Array.isArray(credentials) || credentials.length === 0)
+        return res.status(400).json({ error: 'Enfermería y Acompañante Terapéutico requieren al menos una matrícula (nacional o provincial).' })
+      for (const c of credentials) {
+        if (!c.type || !c.number?.trim())
+          return res.status(400).json({ error: 'Completá el tipo y número de cada matrícula.' })
+      }
     }
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return res.status(409).json({ error: 'El email ya está registrado' })
 
     const hashed = await bcrypt.hash(password, 10)
+    const dniClean  = dni.replace(/\./g, '').trim()
+    const cuilClean = cuil.replace(/[-\s.]/g, '').trim()
 
     // El backend calcula lat/lng a partir de la dirección cargada — nunca
     // se confía en coordenadas que mande el cliente.
@@ -35,6 +71,9 @@ router.post('/register', async (req, res) => {
         email,
         password: hashed,
         role,
+        dni:  dniClean,
+        cuil: cuilClean,
+        identityCheck: { create: { status: 'pending' } },
         ...(role === 'profesional' && {
           professional: {
             create: {
@@ -43,6 +82,15 @@ router.post('/register', async (req, res) => {
               lat: coords?.lat ?? null,
               lng: coords?.lng ?? null,
               travelRadiusKm: travelRadiusKm ? parseFloat(travelRadiusKm) : 15,
+              ...(needsCredential && credentials?.length > 0 && {
+                credentials: {
+                  create: credentials.map(({ type, number, province }) => ({
+                    type,
+                    number: number.trim(),
+                    province: province?.trim() || null,
+                  })),
+                },
+              }),
             },
           },
         }),
@@ -57,7 +105,7 @@ router.post('/register', async (req, res) => {
           },
         }),
       },
-      include: { professional: true, parent: true },
+      include: { professional: { include: { credentials: true } }, parent: true },
     })
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' })
@@ -124,7 +172,7 @@ router.post('/forgot-password', async (req, res) => {
 
     await prisma.passwordResetToken.create({ data: { userId: user.id, token, expiresAt } })
 
-    const frontendUrl = 'https://cuid-ar-nine.vercel.app'
+    const frontendUrl = process.env.FRONTEND_URL || 'https://www.cuidar360.com.ar'
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`
     const { subject, html } = tpl.resetPassword(resetUrl)
     await sendEmail({ to: email, subject, html })

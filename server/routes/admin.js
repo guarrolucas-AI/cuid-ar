@@ -191,7 +191,10 @@ router.get('/professionals', async (req, res) => {
         ...(zone     && { zone }),
         ...(verified !== undefined && verified !== '' && { verified: verified === 'true' }),
       },
-      include: { user: { select: { email: true, status: true, createdAt: true } } },
+      include: {
+        user: { select: { email: true, status: true, createdAt: true, dni: true, cuil: true } },
+        credentials: { orderBy: { createdAt: 'asc' } },
+      },
       orderBy: { user: { createdAt: 'desc' } },
     })
     res.json(professionals)
@@ -244,7 +247,7 @@ router.post('/subscription/:userId', async (req, res) => {
 router.get('/parents', async (req, res) => {
   try {
     const parents = await prisma.parent.findMany({
-      include: { user: { select: { email: true, status: true, createdAt: true } } },
+      include: { user: { select: { email: true, status: true, createdAt: true, dni: true, cuil: true } } },
       orderBy: { user: { createdAt: 'desc' } },
     })
     res.json(parents)
@@ -253,6 +256,72 @@ router.get('/parents', async (req, res) => {
   }
 })
 
+// GET /api/admin/identity-checks — cola de verificaciones de antecedentes
+router.get('/identity-checks', async (req, res) => {
+  try {
+    const { status } = req.query
+    const checks = await prisma.identityCheck.findMany({
+      where: { ...(status && { status }) },
+      include: {
+        user: {
+          select: {
+            email: true, role: true, createdAt: true, dni: true, cuil: true,
+            professional: { select: { name: true, categories: true, credentials: true } },
+            parent:       { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { requestedAt: 'desc' },
+    })
+    res.json(checks)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /api/admin/identity-checks/:userId — actualiza status + notas
+router.patch('/identity-checks/:userId', async (req, res) => {
+  try {
+    const { status, notes } = req.body
+    const VALID = ['pending', 'clear', 'flagged', 'manual_review']
+    if (!VALID.includes(status)) return res.status(400).json({ error: 'Status inválido' })
+    const updated = await prisma.identityCheck.update({
+      where: { userId: req.params.userId },
+      data: {
+        status,
+        notes: notes ?? null,
+        resolvedAt: status !== 'pending' ? new Date() : null,
+        resolvedBy: status !== 'pending' ? req.user.email : null,
+      },
+    })
+    await logAudit(req, `identity.${status}`, { targetType: 'User', targetId: req.params.userId, detail: notes })
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/admin/credentials/:credentialId/verify — verifica una matrícula profesional
+router.post('/credentials/:credentialId/verify', async (req, res) => {
+  try {
+    const { verified } = req.body
+    const updated = await prisma.professionalCredential.update({
+      where: { id: req.params.credentialId },
+      data: {
+        verifiedAt: verified ? new Date() : null,
+        verifiedBy: verified ? req.user.email : null,
+      },
+    })
+    await logAudit(req, verified ? 'credential.verify' : 'credential.unverify', {
+      targetType: 'ProfessionalCredential', targetId: updated.id,
+    })
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/admin/parents — incluye dni/cuil para el admin
 // GET /api/admin/audit — últimas acciones del backoffice (auditoría)
 router.get('/audit', async (req, res) => {
   try {

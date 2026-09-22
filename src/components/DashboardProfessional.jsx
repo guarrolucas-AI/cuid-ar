@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle, Camera, Zap, Briefcase, ChevronDown, ChevronUp, FileText } from 'lucide-react'
+import { ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Save, User, Phone, MapPin, Tag, Bell, RefreshCw, Lock, CreditCard, MessageCircle, Camera, Zap, Briefcase, ChevronDown, ChevronUp, FileText, Award, PlusCircle, Trash2, CheckCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import ChatPanel from './ChatPanel'
 import NotificationBell from './NotificationBell'
@@ -299,6 +299,11 @@ export default function DashboardProfessional({ user, professional: init }) {
           <div ref={rateRef}>
             <RateForm pro={pro} setPro={setPro} patch={patch} notify={notify} />
           </div>
+
+          {/* Credenciales — solo visible si tiene categorías que las requieren */}
+          {(pro.categories ?? []).some((c) => ['salud', 'terapeutico'].includes(c)) && (
+            <CredentialsSection pro={pro} setPro={setPro} notify={notify} />
+          )}
         </>
       )}
     </div>
@@ -434,6 +439,8 @@ function PaymentWall() {
 }
 
 const CAT_LABELS = { infantil:'Cuidado Infantil', pedagogico:'Apoyo Pedagógico', salud:'Salud Pediátrica', terapeutico:'Cuidado Terapéutico', limpieza:'Limpieza del Hogar' }
+
+const PROVINCES = ['Buenos Aires','CABA','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán']
 
 function ContactRequests({ onOpenChat }) {
   const [requests, setRequests] = useState([])
@@ -648,6 +655,135 @@ function RateForm({ pro, setPro, patch, notify }) {
           onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
           onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
           <Save className="w-4 h-4"/>{saving ? 'Guardando…' : 'Guardar'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+function CredentialsSection({ pro, setPro, notify }) {
+  const [enabled, setEnabled] = useState(() => ({
+    matricula_nacional:    (pro.credentials ?? []).some(c => c.type === 'matricula_nacional'),
+    matricula_provincial:  (pro.credentials ?? []).some(c => c.type === 'matricula_provincial'),
+  }))
+  const [numbers, setNumbers] = useState(() => {
+    const n = { matricula_nacional: '', matricula_provincial: '' }
+    ;(pro.credentials ?? []).forEach(c => { n[c.type] = c.number ?? '' })
+    return n
+  })
+  const [province, setProvince] = useState(() => {
+    const p = (pro.credentials ?? []).find(c => c.type === 'matricula_provincial')
+    return p?.province ?? ''
+  })
+  const [saving, setSaving] = useState(false)
+
+  const CRED_TYPES = [
+    { type: 'matricula_nacional', label: 'Matrícula Nacional' },
+    { type: 'matricula_provincial', label: 'Matrícula Provincial' },
+  ]
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    const credentials = []
+    if (enabled.matricula_nacional && numbers.matricula_nacional.trim())
+      credentials.push({ type: 'matricula_nacional', number: numbers.matricula_nacional.trim() })
+    if (enabled.matricula_provincial && numbers.matricula_provincial.trim())
+      credentials.push({ type: 'matricula_provincial', number: numbers.matricula_provincial.trim(), province })
+    if (credentials.length === 0) return notify('Ingresá al menos una matrícula', false)
+    setSaving(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/professional/credentials`, {
+        method: 'PUT', headers: authHeaders(), body: JSON.stringify({ credentials }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setPro(p => ({ ...p, credentials: data }))
+      notify('Matrículas guardadas')
+    } catch (err) { notify(err.message, false) }
+    setSaving(false)
+  }
+
+  return (
+    <div className="p-6 border" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+      <h3 className="font-heading font-bold mb-1 flex items-center gap-2" style={{ color: 'var(--cuidar-tinta)' }}>
+        <Award className="w-4 h-4" style={{ color: 'var(--cuidar-verde-institucional)' }} />
+        Matrícula Profesional
+      </h3>
+      <p className="text-xs mb-5" style={{ color: 'var(--cuidar-gris-suave)' }}>
+        Requerida para Salud Pediátrica y Cuidado Terapéutico. El equipo de CuidAR 360 verifica los datos antes de mostrar el badge de credencial.
+      </p>
+
+      {(pro.credentials ?? []).length > 0 && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {(pro.credentials ?? []).map(c => {
+            const verified = c.verifiedAt != null
+            const typeLabel = c.type === 'matricula_nacional' ? 'Nacional' : 'Provincial'
+            return (
+              <span key={c.type} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1"
+                style={verified
+                  ? { background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-verde-institucional)', borderRadius: '999px' }
+                  : { background: 'var(--cuidar-nieve)', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)', borderRadius: '999px' }}>
+                {verified ? <CheckCircle className="w-3 h-3"/> : <Award className="w-3 h-3"/>}
+                Matr. {typeLabel} · {verified ? 'Verificada' : 'Pendiente de verificación'}
+              </span>
+            )
+          })}
+        </div>
+      )}
+
+      <form onSubmit={handleSave} className="space-y-3">
+        {CRED_TYPES.map(({ type, label }) => (
+          <div key={type} className="border" style={{ borderColor: 'var(--cuidar-borde)' }}>
+            <button type="button" onClick={() => setEnabled(e => ({ ...e, [type]: !e[type] }))}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
+              style={enabled[type]
+                ? { background: 'var(--cuidar-nieve)', borderBottom: '1px solid var(--cuidar-borde)' }
+                : { background: '#FFFFFF' }}>
+              <div className="w-4 h-4 border-2 flex items-center justify-center flex-shrink-0"
+                style={enabled[type]
+                  ? { borderColor: 'var(--cuidar-verde-institucional)', background: 'var(--cuidar-verde-institucional)' }
+                  : { borderColor: 'var(--cuidar-borde)' }}>
+                {enabled[type] && <CheckCircle className="w-2.5 h-2.5 text-white"/>}
+              </div>
+              <span className="text-sm font-semibold" style={{ color: 'var(--cuidar-texto)' }}>{label}</span>
+            </button>
+
+            {enabled[type] && (
+              <div className="p-4 space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--cuidar-gris-medio)' }}>Número de matrícula</label>
+                  <input value={numbers[type]} onChange={e => setNumbers(n => ({ ...n, [type]: e.target.value }))}
+                    placeholder="ej: 12345"
+                    className="w-full px-4 py-2.5 border text-sm outline-none"
+                    style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-tinta)' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}
+                  />
+                </div>
+                {type === 'matricula_provincial' && (
+                  <div>
+                    <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--cuidar-gris-medio)' }}>Provincia</label>
+                    <select value={province} onChange={e => setProvince(e.target.value)}
+                      className="w-full px-4 py-2.5 border text-sm outline-none"
+                      style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-tinta)', background: '#FFFFFF' }}
+                      onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+                      onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}>
+                      <option value="">Seleccioná provincia</option>
+                      {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 font-semibold disabled:opacity-60 text-sm text-white transition-colors"
+          style={{ background: 'var(--cuidar-verde-institucional)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
+          <Save className="w-4 h-4"/>{saving ? 'Guardando…' : 'Guardar matrículas'}
         </button>
       </form>
     </div>

@@ -18,11 +18,33 @@ const CATEGORIES = [
   { value: 'limpieza',    label: 'Limpieza del Hogar',  Icon: IconLimpieza },
 ]
 
+const PROVINCES = [
+  'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
+  'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja',
+  'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan',
+  'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero',
+  'Tierra del Fuego', 'Tucumán',
+]
+const CATEGORIES_REQUIRING_CREDENTIAL = ['salud', 'terapeutico']
+
+// Validación CUIL offline (dígito verificador)
+function validateCuil(raw) {
+  const clean = (raw ?? '').replace(/[-\s.]/g, '')
+  if (!/^\d{11}$/.test(clean)) return false
+  const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
+  const sum = weights.reduce((acc, w, i) => acc + w * parseInt(clean[i]), 0)
+  const rem = sum % 11
+  const verifier = rem === 0 ? 0 : rem === 1 ? 9 : 11 - rem
+  return parseInt(clean[10]) === verifier
+}
+
 const DEFAULTS = {
   email: '', password: '', confirmPassword: '',
   role: '', name: '', phone: '',
   zone: '', categories: [], hourlyRate: '', travelRadiusKm: '15',
   address: '', maxDistanceKm: '15',
+  dni: '', cuil: '',
+  credentials: [], // [{ type: 'matricula_nacional'|'matricula_provincial', number: '', province: '' }]
 }
 
 export default function RegisterPage() {
@@ -42,12 +64,37 @@ export default function RegisterPage() {
       : [...f.categories, val],
   }))
 
+  const needsCredential = form.role === 'profesional' &&
+    form.categories.some((c) => CATEGORIES_REQUIRING_CREDENTIAL.includes(c))
+
+  const toggleCredType = (type) => setForm((f) => {
+    const has = f.credentials.some((c) => c.type === type)
+    return {
+      ...f,
+      credentials: has
+        ? f.credentials.filter((c) => c.type !== type)
+        : [...f.credentials, { type, number: '', province: '' }],
+    }
+  })
+  const setCredField = (type, field, val) => setForm((f) => ({
+    ...f,
+    credentials: f.credentials.map((c) => c.type === type ? { ...c, [field]: val } : c),
+  }))
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     if (form.password !== form.confirmPassword) return setError('Las contraseñas no coinciden')
     if (!form.role) return setError('Elegí un tipo de cuenta')
     if (form.role === 'profesional' && form.categories.length === 0) return setError('Elegí al menos una especialidad')
+    // Validaciones de identidad
+    const dniClean = form.dni.replace(/\./g, '').trim()
+    if (!/^\d{7,8}$/.test(dniClean)) return setError('DNI inválido — ingresá 7 u 8 dígitos sin puntos.')
+    if (!validateCuil(form.cuil)) return setError('CUIL inválido — verificá el formato (XX-XXXXXXXX-X).')
+    if (needsCredential && form.credentials.length === 0)
+      return setError('Enfermería y Acompañante Terapéutico requieren al menos una matrícula.')
+    if (needsCredential && form.credentials.some((c) => !c.number.trim()))
+      return setError('Completá el número de todas las matrículas ingresadas.')
     setLoading(true)
     try {
       await register(form)
@@ -133,6 +180,30 @@ export default function RegisterPage() {
                 onFocus={inputFocus} onBlur={inputBlur} />
             </div>
 
+            {/* Identificación — obligatoria para todos los roles */}
+            <div className="space-y-3 pt-4" style={{ borderTop: '1px solid var(--cuidar-borde)' }}>
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--cuidar-verde-institucional)', letterSpacing: '0.18em' }}>
+                Verificación de identidad
+              </p>
+              <p className="text-xs" style={{ color: 'var(--cuidar-gris-suave)' }}>
+                Requerido para todos los usuarios. Tus datos son privados y solo los ve el equipo de CuidAR 360 para garantizar la seguridad de la plataforma.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>DNI <span style={{ color: '#D9544D' }}>*</span></label>
+                  <input type="text" required value={form.dni} onChange={e => set('dni', e.target.value)}
+                    placeholder="Ej: 38123456" maxLength={9}
+                    className={inputCls} style={inputStyle} onFocus={inputFocus} onBlur={inputBlur} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>CUIL <span style={{ color: '#D9544D' }}>*</span></label>
+                  <input type="text" required value={form.cuil} onChange={e => set('cuil', e.target.value)}
+                    placeholder="Ej: 20-38123456-9" maxLength={13}
+                    className={inputCls} style={inputStyle} onFocus={inputFocus} onBlur={inputBlur} />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>Contraseña</label>
@@ -172,6 +243,52 @@ export default function RegisterPage() {
                     })}
                   </div>
                 </div>
+
+                {/* Matrícula — solo si seleccionó salud o terapéutico */}
+                {needsCredential && (
+                  <div className="p-4" style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)' }}>
+                    <p className="text-sm font-bold mb-1" style={{ color: 'var(--cuidar-tinta)' }}>
+                      Matrícula profesional <span style={{ color: '#D9544D' }}>*</span>
+                    </p>
+                    <p className="text-xs mb-3" style={{ color: 'var(--cuidar-gris-suave)' }}>
+                      Enfermería y Acompañante Terapéutico requieren al menos una matrícula habilitante. El equipo de CuidAR 360 la verificará antes de activar tu perfil verificado.
+                    </p>
+                    <div className="space-y-3">
+                      {[
+                        { type: 'matricula_nacional', label: 'Matrícula Nacional' },
+                        { type: 'matricula_provincial', label: 'Matrícula Provincial' },
+                      ].map(({ type, label }) => {
+                        const cred = form.credentials.find((c) => c.type === type)
+                        return (
+                          <div key={type}>
+                            <label className="flex items-center gap-2 cursor-pointer mb-2">
+                              <input type="checkbox" checked={!!cred} onChange={() => toggleCredType(type)}
+                                className="w-4 h-4 accent-[#1F4D3A]" />
+                              <span className="text-sm font-semibold" style={{ color: 'var(--cuidar-tinta)' }}>{label}</span>
+                            </label>
+                            {cred && (
+                              <div className={`grid gap-3 ml-6 ${type === 'matricula_provincial' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                <input type="text" value={cred.number}
+                                  onChange={e => setCredField(type, 'number', e.target.value)}
+                                  placeholder="Número de matrícula"
+                                  className={inputCls} style={inputStyle} onFocus={inputFocus} onBlur={inputBlur} />
+                                {type === 'matricula_provincial' && (
+                                  <select value={cred.province}
+                                    onChange={e => setCredField(type, 'province', e.target.value)}
+                                    className="w-full px-4 py-3 border text-sm outline-none appearance-none"
+                                    style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}>
+                                    <option value="">Provincia</option>
+                                    {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                                  </select>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>

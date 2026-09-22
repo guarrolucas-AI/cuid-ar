@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   Settings, Users, ShieldCheck, ShieldX, ToggleLeft, ToggleRight,
   Save, Eye, EyeOff, RefreshCw, CheckCircle, AlertCircle, Lock,
-  MapPin, Tag, Filter, DollarSign, Clock, History,
+  MapPin, Tag, Filter, DollarSign, Clock, History, ClipboardList, Award,
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -213,6 +213,7 @@ export default function AdminDashboard() {
       <RatesSection notify={notify} />
       <ProfessionalsSection notify={notify} />
       <ParentsSection />
+      <VerificacionesSection notify={notify} />
       <AuditLogSection />
       <ChangePasswordSection notify={notify} />
     </div>
@@ -612,6 +613,228 @@ const AUDIT_ACTION_LABELS = {
   'professional.unverify': 'Quitó verificación',
   'subscription.activate': 'Activó suscripción',
   'subscription.deactivate': 'Desactivó suscripción',
+  'identity.clear': 'Antecedentes aprobados',
+  'identity.flagged': 'Antecedentes observados',
+  'identity.pending': 'Antecedentes marcados pendientes',
+  'identity.manual_review': 'Marcado para revisión manual',
+  'credential.verify': 'Matrícula verificada',
+  'credential.unverify': 'Verificación de matrícula retirada',
+}
+
+const CHECK_STATUS = {
+  pending:       { label: 'Pendiente',      color: '#92400e',                             bg: '#fffbeb',              border: '#fcd34d' },
+  clear:         { label: 'Aprobado',       color: 'var(--cuidar-verde-institucional)',    bg: 'var(--cuidar-nieve)',  border: 'var(--cuidar-verde-institucional)' },
+  flagged:       { label: 'Observado',      color: '#dc2626',                             bg: '#fef2f2',              border: '#fca5a5' },
+  manual_review: { label: 'Rev. manual',    color: '#6d28d9',                             bg: '#f5f3ff',              border: '#a78bfa' },
+}
+
+function VerificacionesSection({ notify }) {
+  const [checks, setChecks]     = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [saving, setSaving]     = useState({})
+
+  const load = (filter = statusFilter) => {
+    setLoading(true)
+    const params = filter ? `?status=${filter}` : ''
+    fetch(`${API_BASE}/api/admin/identity-checks${params}`, { headers: headers() })
+      .then(r => r.json())
+      .then(data => { setChecks(Array.isArray(data) ? data : []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleStatusChange = async (userId, status, notes) => {
+    setSaving(s => ({ ...s, [userId]: true }))
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/identity-checks/${userId}`, {
+        method: 'PATCH', headers: headers(), body: JSON.stringify({ status, notes }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setChecks(cs => cs.map(c => c.userId === userId ? { ...c, status, notes } : c))
+      notify('ok', 'Verificación actualizada')
+    } catch (err) { notify('err', err.message) }
+    setSaving(s => ({ ...s, [userId]: false }))
+  }
+
+  const handleCredVerify = async (credentialId, verified, userId) => {
+    const key = `cred_${credentialId}`
+    setSaving(s => ({ ...s, [key]: true }))
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/credentials/${credentialId}/verify`, {
+        method: 'POST', headers: headers(), body: JSON.stringify({ verified }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setChecks(cs => cs.map(c => {
+        if (c.userId !== userId) return c
+        const creds = (c.user?.professional?.credentials ?? []).map(cr =>
+          cr.id === credentialId ? { ...cr, verifiedAt: verified ? new Date().toISOString() : null } : cr
+        )
+        return { ...c, user: { ...c.user, professional: { ...c.user.professional, credentials: creds } } }
+      }))
+      notify('ok', verified ? 'Matrícula verificada' : 'Verificación retirada')
+    } catch (err) { notify('err', err.message) }
+    setSaving(s => ({ ...s, [key]: false }))
+  }
+
+  return (
+    <section>
+      <h2 className="font-heading font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--cuidar-tinta)' }}>
+        <ClipboardList className="w-5 h-5" style={{ color: 'var(--cuidar-verde-institucional)' }} /> Verificaciones de Identidad
+      </h2>
+      <div className="border p-5 space-y-4" style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)' }}>
+        <div className="flex gap-3 items-end flex-wrap">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border text-sm outline-none"
+            style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-texto)', background: '#FFFFFF' }}
+            onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+            onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}>
+            <option value="">Todos los estados</option>
+            <option value="pending">Pendientes</option>
+            <option value="clear">Aprobados</option>
+            <option value="flagged">Observados</option>
+            <option value="manual_review">Revisión manual</option>
+          </select>
+          <button onClick={() => load(statusFilter)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition-colors"
+            style={{ background: 'var(--cuidar-verde-institucional)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
+            <Filter className="w-3.5 h-3.5"/> Filtrar
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-10" style={{ color: 'var(--cuidar-gris-suave)' }}>
+            <RefreshCw className="w-5 h-5 animate-spin mr-2"/> Cargando…
+          </div>
+        ) : checks.length === 0 ? (
+          <p className="text-center py-10 text-sm" style={{ color: 'var(--cuidar-gris-suave)' }}>No hay verificaciones con ese filtro.</p>
+        ) : (
+          <div className="space-y-4">
+            {checks.map(check => (
+              <VerificationCard key={check.userId} check={check} saving={saving}
+                onStatusChange={handleStatusChange} onCredVerify={handleCredVerify} />
+            ))}
+            <p className="text-xs" style={{ color: 'var(--cuidar-gris-suave)' }}>{checks.length} verificación{checks.length !== 1 ? 'es' : ''}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function VerificationCard({ check, saving, onStatusChange, onCredVerify }) {
+  const [status, setStatus] = useState(check.status)
+  const [notes, setNotes]   = useState(check.notes ?? '')
+
+  const pro = check.user?.professional
+  const st  = CHECK_STATUS[check.status] ?? CHECK_STATUS.pending
+
+  return (
+    <div className="border p-5 space-y-4" style={{ borderColor: 'var(--cuidar-borde)' }}>
+      {/* Cabecera */}
+      <div className="flex flex-wrap gap-3 items-start justify-between">
+        <div>
+          <p className="font-semibold text-sm" style={{ color: 'var(--cuidar-tinta)' }}>
+            {pro?.name ?? check.user?.email}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--cuidar-gris-suave)' }}>{check.user?.email}</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <span className="text-xs px-2 py-0.5"
+              style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)', color: 'var(--cuidar-gris-medio)' }}>
+              DNI: {check.user?.dni ?? '—'}
+            </span>
+            <span className="text-xs px-2 py-0.5"
+              style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)', color: 'var(--cuidar-gris-medio)' }}>
+              CUIL: {check.user?.cuil ?? '—'}
+            </span>
+            {(pro?.categories ?? []).length > 0 && (
+              <span className="text-xs px-2 py-0.5"
+                style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)', color: 'var(--cuidar-gris-medio)' }}>
+                {pro.categories.map(c => CATEGORY_LABELS[c] ?? c).join(', ')}
+              </span>
+            )}
+          </div>
+        </div>
+        <span className="text-xs font-semibold px-2 py-1 flex-shrink-0"
+          style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}`, borderRadius: '999px' }}>
+          {st.label}
+        </span>
+      </div>
+
+      {/* Matrículas profesionales */}
+      {(pro?.credentials ?? []).length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold" style={{ color: 'var(--cuidar-gris-medio)' }}>MATRÍCULAS</p>
+          {pro.credentials.map(cr => {
+            const credVerified = cr.verifiedAt != null
+            const typeLabel = cr.type === 'matricula_nacional' ? 'Nacional' : 'Provincial'
+            return (
+              <div key={cr.id} className="flex items-center gap-3 flex-wrap p-3"
+                style={{ background: 'var(--cuidar-nieve)', border: '1px solid var(--cuidar-borde)' }}>
+                <Award className="w-3.5 h-3.5 flex-shrink-0" style={{ color: credVerified ? 'var(--cuidar-verde-institucional)' : 'var(--cuidar-gris-suave)' }}/>
+                <span className="flex-1 text-xs font-semibold min-w-0" style={{ color: 'var(--cuidar-texto)' }}>
+                  Matr. {typeLabel}: {cr.number}
+                  {cr.province && <span className="font-normal ml-1" style={{ color: 'var(--cuidar-gris-suave)' }}>— {cr.province}</span>}
+                </span>
+                {credVerified && (
+                  <span className="text-xs px-2 py-0.5 flex-shrink-0"
+                    style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-verde-institucional)', borderRadius: '999px' }}>
+                    Verificada
+                  </span>
+                )}
+                <button disabled={saving[`cred_${cr.id}`]}
+                  onClick={() => onCredVerify(cr.id, !credVerified, check.userId)}
+                  className="text-xs font-semibold px-3 py-1 transition-colors disabled:opacity-50 flex-shrink-0"
+                  style={credVerified
+                    ? { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' }
+                    : { background: 'var(--cuidar-verde-institucional)', color: '#FFFFFF' }}>
+                  {saving[`cred_${cr.id}`] ? '…' : credVerified ? 'Quitar verificación' : 'Verificar'}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Actualizar estado de antecedentes */}
+      <div className="flex flex-wrap gap-3 items-end pt-1" style={{ borderTop: '1px solid var(--cuidar-nieve)' }}>
+        <div className="flex-1 min-w-[12rem]">
+          <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--cuidar-gris-medio)' }}>Estado antecedentes</label>
+          <select value={status} onChange={e => setStatus(e.target.value)}
+            className="w-full px-3 py-2.5 border text-sm outline-none"
+            style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-texto)', background: '#FFFFFF' }}
+            onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+            onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}>
+            <option value="pending">Pendiente</option>
+            <option value="clear">Aprobado</option>
+            <option value="flagged">Observado</option>
+            <option value="manual_review">Revisión manual</option>
+          </select>
+        </div>
+        <div className="flex-[2] min-w-[12rem]">
+          <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--cuidar-gris-medio)' }}>Notas internas</label>
+          <input value={notes} onChange={e => setNotes(e.target.value)}
+            placeholder="ej: verificado con RENAPER el 2026-09-21"
+            className="w-full px-3 py-2.5 border text-sm outline-none"
+            style={{ borderColor: 'var(--cuidar-borde)', color: 'var(--cuidar-texto)' }}
+            onFocus={e => e.target.style.borderColor = 'var(--cuidar-verde-institucional)'}
+            onBlur={e => e.target.style.borderColor = 'var(--cuidar-borde)'}
+          />
+        </div>
+        <button disabled={saving[check.userId]}
+          onClick={() => onStatusChange(check.userId, status, notes)}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold disabled:opacity-60 text-white transition-colors flex-shrink-0"
+          style={{ background: 'var(--cuidar-verde-institucional)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--cuidar-verde-700)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--cuidar-verde-institucional)'}>
+          <Save className="w-4 h-4"/>{saving[check.userId] ? 'Guardando…' : 'Guardar'}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 function AuditLogSection() {
