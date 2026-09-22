@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma.js'
-import { auth, optionalAuth } from '../middleware/auth.js'
+import { auth, optionalAuth, requireNotSuspended } from '../middleware/auth.js'
 import { sendEmail, tpl } from '../lib/email.js'
 import { toProfessionalView, calcProfileScore } from '../lib/professionalView.js'
 import { FALLBACK_RATES } from '../lib/officialRates.js'
@@ -110,10 +110,17 @@ router.get('/search', optionalAuth, async (req, res) => {
           ...(maxRate      && { hourlyRate: { lte: parseFloat(maxRate) } }),
           ...(onDutyFilter && { onDuty: true }),
         },
-          take: DEFAULT_RESULT_LIMIT,
+        include: {
+          user: { include: { identityCheck: { select: { status: true } } } },
+        },
+        take: DEFAULT_RESULT_LIMIT,
       })
       professionals.sort((a, b) => {
         if (a.onDuty !== b.onDuty) return b.onDuty ? 1 : -1
+        // No-verificados por identidad van al final
+        const aVerified = a.user?.identityCheck?.status === 'clear' ? 1 : 0
+        const bVerified = b.user?.identityCheck?.status === 'clear' ? 1 : 0
+        if (bVerified !== aVerified) return bVerified - aVerified
         const psDiff = calcProfileScore(b) - calcProfileScore(a)
         if (psDiff !== 0) return psDiff
         return a.hourlyRate - b.hourlyRate
@@ -130,6 +137,7 @@ router.get('/search', optionalAuth, async (req, res) => {
     // quien no llega a cubrir esa distancia con su radio de traslado.
     const professionals = await prisma.$queryRaw`
       SELECT p.*,
+        ic.status AS "identityStatus",
         ( 6371 * acos(
             LEAST(1, GREATEST(-1,
               cos(radians(${latNum})) * cos(radians(p."lat")) * cos(radians(p."lng") - radians(${lngNum}))
@@ -138,6 +146,7 @@ router.get('/search', optionalAuth, async (req, res) => {
         ) ) AS "distanceKm"
       FROM "Professional" p
       INNER JOIN "User" u ON u."id" = p."userId"
+      LEFT JOIN "IdentityCheck" ic ON ic."userId" = p."userId"
       WHERE p."available" = true
         AND p."verified" = true
         AND u."status" = 'subscribed'
@@ -146,7 +155,7 @@ router.get('/search', optionalAuth, async (req, res) => {
         ${category     ? Prisma.sql`AND ${category} = ANY(p."categories")` : Prisma.empty}
         ${maxRate      ? Prisma.sql`AND p."hourlyRate" <= ${parseFloat(maxRate)}` : Prisma.empty}
         ${onDutyFilter ? Prisma.sql`AND p."onDuty" = true` : Prisma.empty}
-      ORDER BY p."onDuty" DESC, "distanceKm" ASC
+      ORDER BY p."onDuty" DESC, (ic.status = 'clear') DESC, "distanceKm" ASC
       LIMIT ${DEFAULT_RESULT_LIMIT * 3}
     `
 
@@ -159,6 +168,9 @@ router.get('/search', optionalAuth, async (req, res) => {
 
     inRange.sort((a, b) => {
       if (a.onDuty !== b.onDuty) return b.onDuty ? 1 : -1
+      const aVerified = a.identityStatus === 'clear' ? 1 : 0
+      const bVerified = b.identityStatus === 'clear' ? 1 : 0
+      if (bVerified !== aVerified) return bVerified - aVerified
       const psDiff = calcProfileScore(b) - calcProfileScore(a)
       if (psDiff !== 0) return psDiff
       return (a.distanceKm ?? 0) - (b.distanceKm ?? 0)
@@ -171,26 +183,20 @@ router.get('/search', optionalAuth, async (req, res) => {
 })
 
 // POST /api/match/notify
-router.post('/notify', auth, async (req, res) => {
+router.post('/notify', auth, requireNotSuspended, async (req, res) => {
   try {
     if (req.user.status !== 'subscribed')
       return res.status(403).json({ error: 'Se requiere suscripción activa' })
     const { professionalId, category } = req.body
 
-    const [professional, parent, identityCheckPro, identityCheckParent] = await Promise.all([
+    const [professional, parent] = await Promise.all([
       prisma.professional.findUnique({ where: { userId: professionalId }, include: { user: true } }),
       prisma.parent.findUnique({ where: { userId: req.user.id } }),
-      prisma.identityCheck.findUnique({ where: { userId: professionalId } }),
-      prisma.identityCheck.findUnique({ where: { userId: req.user.id } }),
     ])
 
     if (!professional || !parent) return res.status(404).json({ error: 'Datos no encontrados' })
     if (!professional.verified || professional.user.status !== 'subscribed')
       return res.status(403).json({ error: 'Profesional no disponible' })
-    if (!identityCheckPro || identityCheckPro.status !== 'clear')
-      return res.status(403).json({ error: 'El profesional aún no completó la verificación de identidad.', blockReason: 'identity_pending' })
-    if (!identityCheckParent || identityCheckParent.status !== 'clear')
-      return res.status(403).json({ error: 'Tu cuenta aún no completó la verificación de identidad. Revisá tu panel para subir el certificado.', blockReason: 'identity_pending' })
 
     await prisma.contactRequest.create({
       data: { professionalId: professional.userId, parentId: parent.userId, category },
@@ -218,7 +224,7 @@ router.post('/notify', auth, async (req, res) => {
 // POST /api/match/guard-request — solicitud estructurada de guardia urgente.
 // Crea un ContactRequest + Conversation (igual que /notify) y además inserta
 // un mensaje pre-formateado con las opciones seleccionadas por la familia.
-router.post('/guard-request', auth, async (req, res) => {
+router.post('/guard-request', auth, requireNotSuspended, async (req, res) => {
   try {
     if (req.user.status !== 'subscribed')
       return res.status(403).json({ error: 'Se requiere suscripción activa' })
@@ -227,19 +233,13 @@ router.post('/guard-request', auth, async (req, res) => {
     if (!professionalId || !category || !startTime || !duration || !reason)
       return res.status(400).json({ error: 'Faltan campos obligatorios' })
 
-    const [professional, parent, identityCheckGuardPro, identityCheckGuardParent] = await Promise.all([
+    const [professional, parent] = await Promise.all([
       prisma.professional.findUnique({ where: { userId: professionalId }, include: { user: true } }),
       prisma.parent.findUnique({ where: { userId: req.user.id } }),
-      prisma.identityCheck.findUnique({ where: { userId: professionalId } }),
-      prisma.identityCheck.findUnique({ where: { userId: req.user.id } }),
     ])
     if (!professional || !parent) return res.status(404).json({ error: 'Datos no encontrados' })
     if (!professional.verified || professional.user.status !== 'subscribed')
       return res.status(403).json({ error: 'Profesional no disponible' })
-    if (!identityCheckGuardPro || identityCheckGuardPro.status !== 'clear')
-      return res.status(403).json({ error: 'El profesional aún no completó la verificación de identidad.', blockReason: 'identity_pending' })
-    if (!identityCheckGuardParent || identityCheckGuardParent.status !== 'clear')
-      return res.status(403).json({ error: 'Tu cuenta aún no completó la verificación de identidad. Revisá tu panel para subir el certificado.', blockReason: 'identity_pending' })
 
     await prisma.contactRequest.create({
       data: { professionalId: professional.userId, parentId: parent.userId, category },

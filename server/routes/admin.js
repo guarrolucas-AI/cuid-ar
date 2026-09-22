@@ -231,9 +231,12 @@ router.post('/verify/:userId', async (req, res) => {
 router.post('/subscription/:userId', async (req, res) => {
   try {
     const { active } = req.body
+    const data = active
+      ? { status: 'subscribed', subscribedAt: new Date() }
+      : { status: 'active', subscribedAt: null }
     const updated = await prisma.user.update({
       where: { id: req.params.userId },
-      data: { status: active ? 'subscribed' : 'active' },
+      data,
     })
     await logAudit(req, active ? 'subscription.activate' : 'subscription.deactivate', {
       targetType: 'User', targetId: updated.id, detail: updated.email,
@@ -302,6 +305,7 @@ router.patch('/identity-checks/:userId', async (req, res) => {
         where: { id: req.params.userId },
         select: {
           email: true,
+          status: true,
           professional: { select: { name: true } },
           parent: { select: { name: true } },
         },
@@ -311,6 +315,13 @@ router.patch('/identity-checks/:userId', async (req, res) => {
     if (userRecord) {
       const name = userRecord.professional?.name ?? userRecord.parent?.name ?? userRecord.email
       if (status === 'clear') {
+        // Si estaba suspendido por documentación pendiente, reactivar la suscripción
+        if (userRecord.status === 'suspended_docs') {
+          await prisma.user.update({
+            where: { id: req.params.userId },
+            data: { status: 'subscribed' },
+          })
+        }
         const { subject, html } = tpl.identityApproved(name)
         sendEmail({ to: userRecord.email, subject, html }).catch(console.error)
       } else if (status === 'flagged') {

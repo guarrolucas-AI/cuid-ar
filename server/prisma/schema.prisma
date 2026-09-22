@@ -22,6 +22,9 @@ model User {
   consentimientoAntecedentes Boolean   @default(false)
   fechaConsentimiento        DateTime?
   ipRegistro                 String?
+  // Fecha en que el usuario activó su suscripción (pagó). Sirve para calcular
+  // el vencimiento de 5 días para presentar el certificado de antecedentes.
+  subscribedAt               DateTime?
   professional        Professional?
   parent              Parent?
   passwordResetTokens PasswordResetToken[]

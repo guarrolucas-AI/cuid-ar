@@ -391,10 +391,16 @@ export default function SearchPage() {
                           <Zap className="w-3 h-3" /> Disponible Hoy
                         </span>
                       )}
-                      {pro.verified && (
+                      {pro.identityVerified && (
                         <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5"
                           style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-verde-institucional)', borderRadius: '999px' }}>
                           <ShieldCheck className="w-3 h-3" /> Documentación Verificada
+                        </span>
+                      )}
+                      {pro.identityPending && (
+                        <span className="flex items-center gap-1 text-xs px-2.5 py-0.5"
+                          style={{ background: '#FFF7ED', color: '#92400E', border: '1px solid #F59E0B', borderRadius: '999px' }}>
+                          ⏳ Documentación en trámite
                         </span>
                       )}
                     </div>

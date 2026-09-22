@@ -10,6 +10,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import LegalPage from './pages/LegalPage'
 import SearchPage from './pages/SearchPage'
+import CargarAntecedentesPage from './pages/CargarAntecedentesPage'
 
 function App() {
   return (
@@ -26,6 +27,11 @@ function App() {
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/cargar-antecedentes" element={
+            <ProtectedRoute>
+              <CargarAntecedentesPage />
             </ProtectedRoute>
           } />
         </Routes>

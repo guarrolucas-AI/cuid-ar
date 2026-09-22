@@ -67,7 +67,10 @@ router.get('/verify', auth, async (req, res) => {
     const authorized = search?.results?.some(s => s.status === 'authorized')
 
     if (authorized && req.user.status !== 'subscribed') {
-      await prisma.user.update({ where: { id: req.user.id }, data: { status: 'subscribed' } })
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { status: 'subscribed', subscribedAt: new Date() },
+      })
       return res.json({ status: 'subscribed', updated: true })
     }
 

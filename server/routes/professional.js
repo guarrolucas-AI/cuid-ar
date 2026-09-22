@@ -181,19 +181,37 @@ router.patch('/alert-config', auth, async (req, res) => {
 })
 
 // GET /api/professional/identity-status — estado de verificación de identidad
-// del profesional autenticado. Solo expone lo que el profesional necesita
-// ver: status, si ya subió el PDF, y observaciones si fue marcado 'flagged'.
+// del usuario autenticado. Incluye días restantes para el vencimiento y si
+// la cuenta está suspendida por documentación.
 router.get('/identity-status', auth, async (req, res) => {
   try {
-    const check = await prisma.identityCheck.findUnique({
-      where: { userId: req.user.id },
-      select: { status: true, certificadoUrl: true, notes: true },
-    })
-    if (!check) return res.json({ status: 'pending', hasCertificado: false, notes: null })
+    const SUSPENSION_DAYS = 5
+    const [check, user] = await Promise.all([
+      prisma.identityCheck.findUnique({
+        where: { userId: req.user.id },
+        select: { status: true, certificadoUrl: true, notes: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { subscribedAt: true, status: true },
+      }),
+    ])
+
+    const isSuspended = user?.status === 'suspended_docs'
+    const identityStatus = check?.status ?? 'pending'
+    let daysRemaining = null
+    if (user?.subscribedAt && !isSuspended && identityStatus !== 'clear') {
+      const elapsed = (Date.now() - new Date(user.subscribedAt).getTime()) / (1000 * 60 * 60 * 24)
+      daysRemaining = Math.max(0, Math.ceil(SUSPENSION_DAYS - elapsed))
+    }
+
+    if (!check) return res.json({ status: 'pending', hasCertificado: false, notes: null, daysRemaining, isSuspended })
     res.json({
-      status: check.status,
+      status: identityStatus,
       hasCertificado: !!check.certificadoUrl,
-      notes: check.status === 'flagged' ? check.notes : null,
+      notes: identityStatus === 'flagged' ? check.notes : null,
+      daysRemaining,
+      isSuspended,
     })
   } catch (err) {
     res.status(500).json({ error: err.message })

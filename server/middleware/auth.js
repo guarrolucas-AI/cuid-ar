@@ -17,6 +17,17 @@ export const auth = async (req, res, next) => {
   }
 }
 
+// Bloquea usuarios con status 'suspended_docs' — cuenta suspendida por
+// documentación vencida. Debe aplicarse DESPUÉS de `auth`.
+export const requireNotSuspended = (req, res, next) => {
+  if (req.user?.status === 'suspended_docs')
+    return res.status(403).json({
+      error: 'Tu cuenta está suspendida. Subí tu certificado de antecedentes para reactivarla.',
+      blockReason: 'suspended_docs',
+    })
+  next()
+}
+
 // Igual que `auth`, pero no bloquea si no hay token: deja req.user en null
 // para rutas públicas que además quieren dar más datos si hay sesión activa
 // (ej. la búsqueda de profesionales, visible para visitantes sin cuenta).

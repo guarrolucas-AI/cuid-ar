@@ -26,6 +26,14 @@ export function toProfessionalView(pro, viewerSubscribed, officialRate = null) {
   // Solo badge de verificación de credenciales — NUNCA el número de matrícula
   const hasVerifiedCredential = (pro.credentials ?? []).some((c) => c.verifiedAt != null)
 
+  // identityStatus viene de:
+  // - raw SQL path: campo "identityStatus" en la fila devuelta
+  // - Prisma path: pro.user.identityCheck.status (si se incluyó en la query)
+  const identityStatus = pro.identityStatus ?? pro.user?.identityCheck?.status ?? 'pending'
+  const identityVerified = identityStatus === 'clear'
+  // pending / manual_review = "en trámite"; flagged / null = no en trámite
+  const identityPending = !identityVerified && (identityStatus === 'pending' || identityStatus === 'manual_review')
+
   const base = {
     userId: pro.userId,
     name: pro.name,
@@ -33,6 +41,8 @@ export function toProfessionalView(pro, viewerSubscribed, officialRate = null) {
     categories: pro.categories ?? [],
     hourlyRate: pro.hourlyRate,
     verified: pro.verified,
+    identityVerified,
+    identityPending,
     hasVerifiedCredential,
     onDuty: pro.onDuty ?? false,
     photoUrl: pro.photoUrl ?? null,
