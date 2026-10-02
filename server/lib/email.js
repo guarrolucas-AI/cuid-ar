@@ -25,27 +25,27 @@ export async function sendEmail({ to, subject, html }) {
 // ── Templates ──────────────────────────────────────────────────────────────
 export const tpl = {
   welcome: (name, role) => ({
-    subject: 'Bienvenido/a a CUID_AR',
+    subject: 'Bienvenido/a a CuidAR 360',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#14b8a6">¡Bienvenido/a a CUID_AR, ${name}!</h2>
+        <h2 style="color:#1F4D3A">¡Bienvenido/a a CuidAR 360, ${name}!</h2>
         <p>Tu cuenta como <strong>${role === 'profesional' ? 'Profesional' : 'Familia'}</strong> fue creada exitosamente.</p>
         ${role === 'profesional'
           ? '<p>Un administrador revisará y verificará tu perfil pronto. Te avisaremos cuando esté aprobado.</p>'
           : '<p>Ya podés buscar profesionales de confianza en tu zona.</p>'}
-        <a href="https://cuid-ar-nine.vercel.app/dashboard"
-           style="display:inline-block;margin-top:16px;padding:12px 24px;background:#14b8a6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">
+        <a href="https://www.cuidar360.com.ar/dashboard"
+           style="display:inline-block;margin-top:16px;padding:12px 24px;background:#1F4D3A;color:#fff;text-decoration:none;font-weight:bold">
           Ir a mi panel
         </a>
-        <p style="margin-top:24px;font-size:12px;color:#888">CUID_AR — Buenos Aires, Argentina</p>
+        <p style="margin-top:24px;font-size:12px;color:#888">CuidAR 360 — Buenos Aires, Argentina</p>
       </div>`,
   }),
 
   notify: (proName, parentName, parentPhone, parentAddress, category) => ({
-    subject: 'CUID_AR — Nueva consulta de una familia',
+    subject: 'CuidAR 360 — Nueva consulta de una familia',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#14b8a6">¡Tenés una nueva consulta!</h2>
+        <h2 style="color:#1F4D3A">¡Tenés una nueva consulta!</h2>
         <p>Hola <strong>${proName}</strong>,</p>
         <p>Una familia está buscando un profesional de <strong>${category}</strong>.</p>
         <table style="margin-top:16px;border-collapse:collapse;width:100%">
@@ -53,11 +53,11 @@ export const tpl = {
           <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold;color:#555">Teléfono</td><td style="padding:8px">${parentPhone}</td></tr>
           <tr><td style="padding:8px;font-weight:bold;color:#555">Zona</td><td style="padding:8px">${parentAddress}</td></tr>
         </table>
-        <a href="https://cuid-ar-nine.vercel.app/dashboard"
-           style="display:inline-block;margin-top:20px;padding:12px 24px;background:#14b8a6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">
+        <a href="https://www.cuidar360.com.ar/dashboard"
+           style="display:inline-block;margin-top:20px;padding:12px 24px;background:#1F4D3A;color:#fff;text-decoration:none;font-weight:bold">
           Ver en mi panel
         </a>
-        <p style="margin-top:24px;font-size:12px;color:#888">CUID_AR — Buenos Aires, Argentina</p>
+        <p style="margin-top:24px;font-size:12px;color:#888">CuidAR 360 — Buenos Aires, Argentina</p>
       </div>`,
   }),
 
@@ -110,17 +110,17 @@ export const tpl = {
   }),
 
   verified: (name) => ({
-    subject: 'CUID_AR — Tu perfil fue verificado',
+    subject: 'CuidAR 360 — Tu perfil fue verificado',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#14b8a6">¡Tu perfil está verificado!</h2>
+        <h2 style="color:#1F4D3A">¡Tu perfil está verificado!</h2>
         <p>Hola <strong>${name}</strong>,</p>
         <p>Tu perfil profesional fue aprobado. Ahora aparecés en los resultados de búsqueda de las familias.</p>
-        <a href="https://cuid-ar-nine.vercel.app/dashboard"
-           style="display:inline-block;margin-top:16px;padding:12px 24px;background:#14b8a6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">
+        <a href="https://www.cuidar360.com.ar/dashboard"
+           style="display:inline-block;margin-top:16px;padding:12px 24px;background:#1F4D3A;color:#fff;text-decoration:none;font-weight:bold">
           Ver mi panel
         </a>
-        <p style="margin-top:24px;font-size:12px;color:#888">CUID_AR — Buenos Aires, Argentina</p>
+        <p style="margin-top:24px;font-size:12px;color:#888">CuidAR 360 — Buenos Aires, Argentina</p>
       </div>`,
   }),
 }
