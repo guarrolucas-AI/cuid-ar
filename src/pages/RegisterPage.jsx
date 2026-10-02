@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Home, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -56,6 +56,13 @@ export default function RegisterPage() {
   const [form, setForm]   = useState({ ...DEFAULTS, role: preRole })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const errorRef = useRef(null)
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [error])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
   const toggleCat = (val) => setForm((f) => ({
@@ -132,7 +139,7 @@ export default function RegisterPage() {
           <p className="text-sm mb-7" style={{ color: 'var(--cuidar-gris-suave)' }}>Unite a la red de cuidado profesional</p>
 
           {error && (
-            <div className="flex items-center gap-2 border text-sm px-4 py-3 mb-5"
+            <div ref={errorRef} className="flex items-center gap-2 border text-sm px-4 py-3 mb-5"
               style={{ background: 'var(--cuidar-coral-soft)', borderColor: '#D9544D', color: '#B8433D' }}>
               <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
             </div>
