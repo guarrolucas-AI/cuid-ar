@@ -3,6 +3,7 @@ import {
   Settings, Users, ShieldCheck, ShieldX, ToggleLeft, ToggleRight,
   Save, Eye, EyeOff, RefreshCw, CheckCircle, AlertCircle, Lock,
   MapPin, Tag, Filter, DollarSign, Clock, History, ClipboardList, Award,
+  Trash2, FileX, X,
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -212,7 +213,7 @@ export default function AdminDashboard() {
 
       <RatesSection notify={notify} />
       <ProfessionalsSection notify={notify} />
-      <ParentsSection />
+      <ParentsSection notify={notify} />
       <VerificacionesSection notify={notify} />
       <AuditLogSection />
       <ChangePasswordSection notify={notify} />
@@ -228,6 +229,9 @@ function ProfessionalsSection({ notify }) {
   const [filters, setFilters] = useState({ category:'', zone:'', verified:'' })
   const [verifying, setVerifying]             = useState({})
   const [togglingSubscription, setTogglingSubscription] = useState({})
+  const [fichaId, setFichaId]                 = useState(null)
+  const [confirmDelete, setConfirmDelete]     = useState(null)
+  const [deleting, setDeleting]               = useState({})
 
   const load = async (f = filters) => {
     setLoading(true)
@@ -270,9 +274,23 @@ function ProfessionalsSection({ notify }) {
     setTogglingSubscription(v => ({ ...v, [pro.userId]: false }))
   }
 
+  const handleDelete = async (userId) => {
+    setDeleting(d => ({ ...d, [userId]: true }))
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, { method: 'DELETE', headers: headers() })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setPros(ps => ps.filter(p => p.userId !== userId))
+      setConfirmDelete(null)
+      notify('ok', 'Usuario eliminado')
+    } catch (err) { notify('err', err.message) }
+    setDeleting(d => ({ ...d, [userId]: false }))
+  }
+
   const selCls = 'pl-8 pr-3 py-2 border text-sm outline-none appearance-none'
 
   return (
+    <>
+    {fichaId && <UserFichaModal userId={fichaId} onClose={() => setFichaId(null)} />}
     <section>
       <h2 className="font-heading font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--cuidar-tinta)' }}>
         <ShieldCheck className="w-5 h-5" style={{ color: 'var(--cuidar-verde-institucional)' }} /> Profesionales
@@ -383,6 +401,32 @@ function ProfessionalsSection({ notify }) {
                             : { background: 'var(--cuidar-nieve)', color: 'var(--cuidar-verde-institucional)', border: '1px solid var(--cuidar-verde-institucional)' }}>
                           {togglingSubscription[pro.userId] ? '…' : pro.user?.status === 'subscribed' ? 'Desactivar suscripción' : 'Activar suscripción'}
                         </button>
+                        <button onClick={() => setFichaId(pro.userId)}
+                          className="text-xs font-semibold px-3 py-1.5 transition-colors whitespace-nowrap"
+                          style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-texto)', border: '1px solid var(--cuidar-borde)' }}>
+                          Ver ficha
+                        </button>
+                        {confirmDelete === pro.userId ? (
+                          <div className="flex gap-1">
+                            <button disabled={deleting[pro.userId]}
+                              onClick={() => handleDelete(pro.userId)}
+                              className="text-xs font-semibold px-2 py-1.5 disabled:opacity-50 whitespace-nowrap"
+                              style={{ background: '#dc2626', color: '#fff', border: '1px solid #dc2626' }}>
+                              {deleting[pro.userId] ? '…' : '¿Confirmar?'}
+                            </button>
+                            <button onClick={() => setConfirmDelete(null)}
+                              className="text-xs font-semibold px-2 py-1.5"
+                              style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)' }}>
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDelete(pro.userId)}
+                            className="text-xs font-semibold px-3 py-1.5 transition-colors whitespace-nowrap"
+                            style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' }}>
+                            Eliminar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -394,6 +438,7 @@ function ProfessionalsSection({ notify }) {
         )}
       </div>
     </section>
+    </>
   )
 }
 
@@ -518,10 +563,13 @@ function RatesSection({ notify }) {
   )
 }
 
-function ParentsSection() {
-  const [parents, setParents]   = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [toggling, setToggling] = useState({})
+function ParentsSection({ notify }) {
+  const [parents, setParents]         = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [toggling, setToggling]       = useState({})
+  const [fichaId, setFichaId]         = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [deleting, setDeleting]       = useState({})
 
   useEffect(() => {
     fetch(`${API_BASE}/api/admin/parents`, { headers: headers() })
@@ -543,7 +591,21 @@ function ParentsSection() {
     setToggling(t => ({ ...t, [p.userId]: false }))
   }
 
+  const handleDelete = async (userId) => {
+    setDeleting(d => ({ ...d, [userId]: true }))
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, { method: 'DELETE', headers: headers() })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setParents(ps => ps.filter(x => x.userId !== userId))
+      setConfirmDelete(null)
+      notify('ok', 'Usuario eliminado')
+    } catch (err) { notify('err', err.message) }
+    setDeleting(d => ({ ...d, [userId]: false }))
+  }
+
   return (
+    <>
+    {fichaId && <UserFichaModal userId={fichaId} onClose={() => setFichaId(null)} />}
     <section>
       <h2 className="font-heading font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--cuidar-tinta)' }}>
         <Users className="w-5 h-5" style={{ color: 'var(--cuidar-verde-institucional)' }} /> Familias registradas
@@ -565,6 +627,7 @@ function ParentsSection() {
                   <th className="text-left py-2 pr-4 font-semibold hidden sm:table-cell">Teléfono</th>
                   <th className="text-left py-2 pr-4 font-semibold hidden md:table-cell">Dirección</th>
                   <th className="text-left py-2 pr-4 font-semibold hidden sm:table-cell">Suscripción</th>
+                  <th className="py-2"/>
                   <th className="py-2"/>
                 </tr>
               </thead>
@@ -593,6 +656,36 @@ function ParentsSection() {
                         {toggling[p.userId] ? '…' : p.user?.status === 'subscribed' ? 'Desactivar' : 'Activar'}
                       </button>
                     </td>
+                    <td className="py-3" style={{ borderBottom: '1px solid var(--cuidar-nieve)' }}>
+                      <div className="flex flex-col gap-1.5">
+                        <button onClick={() => setFichaId(p.userId)}
+                          className="text-xs font-semibold px-3 py-1.5 transition-colors whitespace-nowrap"
+                          style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-texto)', border: '1px solid var(--cuidar-borde)' }}>
+                          Ver ficha
+                        </button>
+                        {confirmDelete === p.userId ? (
+                          <div className="flex gap-1">
+                            <button disabled={deleting[p.userId]}
+                              onClick={() => handleDelete(p.userId)}
+                              className="text-xs font-semibold px-2 py-1.5 disabled:opacity-50 whitespace-nowrap"
+                              style={{ background: '#dc2626', color: '#fff', border: '1px solid #dc2626' }}>
+                              {deleting[p.userId] ? '…' : '¿Confirmar?'}
+                            </button>
+                            <button onClick={() => setConfirmDelete(null)}
+                              className="text-xs font-semibold px-2 py-1.5"
+                              style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-gris-medio)', border: '1px solid var(--cuidar-borde)' }}>
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDelete(p.userId)}
+                            className="text-xs font-semibold px-3 py-1.5 transition-colors whitespace-nowrap"
+                            style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' }}>
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -602,6 +695,7 @@ function ParentsSection() {
         )}
       </div>
     </section>
+    </>
   )
 }
 
@@ -620,6 +714,7 @@ const AUDIT_ACTION_LABELS = {
   'identity.manual_review': 'Marcado para revisión manual',
   'credential.verify': 'Matrícula verificada',
   'credential.unverify': 'Verificación de matrícula retirada',
+  'user.delete': 'Eliminó usuario',
 }
 
 const CHECK_STATUS = {
@@ -764,7 +859,7 @@ function VerificationCard({ check, saving, onStatusChange, onCredVerify }) {
             style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}`, borderRadius: '999px' }}>
             {st.label}
           </span>
-          {check.certificadoUrl && (
+          {check.certificadoUrl ? (
             <button type="button"
               onClick={async () => {
                 try {
@@ -782,6 +877,11 @@ function VerificationCard({ check, saving, onStatusChange, onCredVerify }) {
               style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #93C5FD' }}>
               <ClipboardList className="w-3.5 h-3.5" /> Ver certificado
             </button>
+          ) : (
+            <div className="flex items-center gap-1.5 text-xs font-medium px-2 py-1"
+              style={{ background: '#FEF9C3', color: '#854D0E', border: '1px solid #FDE047' }}>
+              <FileX className="w-3.5 h-3.5" /> Sin certificado
+            </div>
           )}
         </div>
       </div>
@@ -859,6 +959,137 @@ function VerificationCard({ check, saving, onStatusChange, onCredVerify }) {
             : 'Guardar'}
         </button>
       </div>
+    </div>
+  )
+}
+
+function UserFichaModal({ userId, onClose }) {
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/admin/users/${userId}`, { headers: headers() })
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [userId])
+
+  const fmt = (d) => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+  const STATUS_LABELS = { active: 'Activo', subscribed: 'Suscripto', suspended_docs: 'Susp. docs' }
+  const IC_LABELS = { pending: 'Pendiente', clear: 'Aprobado', flagged: 'Observado', manual_review: 'Rev. manual' }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.45)' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto border"
+        style={{ background: '#FFFFFF', borderColor: 'var(--cuidar-borde)', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+
+        <div className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: '1px solid var(--cuidar-borde)' }}>
+          <h3 className="font-heading font-bold text-lg" style={{ color: 'var(--cuidar-tinta)' }}>
+            Ficha de usuario
+          </h3>
+          <button onClick={onClose} style={{ color: 'var(--cuidar-gris-suave)' }}>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12" style={{ color: 'var(--cuidar-gris-suave)' }}>
+              <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando…
+            </div>
+          ) : !data || data.error ? (
+            <p className="text-center py-8 text-sm" style={{ color: 'var(--cuidar-gris-suave)' }}>No se pudo cargar la información.</p>
+          ) : (
+            <div className="space-y-6">
+              <FichaSection title="Cuenta">
+                <FichaRow label="Email" value={data.email} />
+                <FichaRow label="Rol" value={data.role === 'profesional' ? 'Profesional' : data.role === 'padre' ? 'Familia' : data.role} />
+                <FichaRow label="Estado" value={STATUS_LABELS[data.status] ?? data.status} />
+                <FichaRow label="Registrado" value={fmt(data.createdAt)} />
+                {data.subscribedAt && <FichaRow label="Suscripto desde" value={fmt(data.subscribedAt)} />}
+              </FichaSection>
+
+              <FichaSection title="Identificación">
+                <FichaRow label="DNI" value={data.dni ?? '—'} />
+                <FichaRow label="CUIL" value={data.cuil ?? '—'} />
+                <FichaRow label="Consintió datos" value={data.consentimientoAntecedentes ? 'Sí' : 'No'} />
+              </FichaSection>
+
+              {data.professional && (
+                <FichaSection title="Perfil profesional">
+                  <FichaRow label="Nombre" value={data.professional.name} />
+                  <FichaRow label="Teléfono" value={data.professional.phone ?? '—'} />
+                  <FichaRow label="Zona" value={ZONE_LABELS[data.professional.zone] ?? data.professional.zone} />
+                  <FichaRow label="Especialidades" value={(data.professional.categories ?? []).map(c => CATEGORY_LABELS[c] ?? c).join(', ') || '—'} />
+                  <FichaRow label="Tarifa/hora" value={`$${Number(data.professional.hourlyRate).toLocaleString('es-AR')}`} />
+                  <FichaRow label="Dirección" value={data.professional.address ?? '—'} />
+                  <FichaRow label="Verificado" value={data.professional.verified ? 'Sí' : 'No'} />
+                  <FichaRow label="Disponible" value={data.professional.available ? 'Sí' : 'No'} />
+                  {(data.professional.credentials ?? []).length > 0 && (
+                    <div className="px-4 py-2.5">
+                      <span className="text-xs font-semibold block mb-2" style={{ color: 'var(--cuidar-gris-medio)' }}>Matrículas</span>
+                      {data.professional.credentials.map(cr => (
+                        <div key={cr.id} className="text-xs px-3 py-1.5 mb-1 flex items-center gap-2"
+                          style={{ background: 'var(--cuidar-nieve)', color: 'var(--cuidar-texto)' }}>
+                          <span>{cr.type === 'matricula_nacional' ? 'Nacional' : 'Provincial'}: {cr.number}{cr.province ? ` (${cr.province})` : ''}</span>
+                          {cr.verifiedAt && <span style={{ color: 'var(--cuidar-verde-institucional)' }}>✓ Verificada</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </FichaSection>
+              )}
+
+              {data.parent && (
+                <FichaSection title="Perfil familia">
+                  <FichaRow label="Nombre" value={data.parent.name} />
+                  <FichaRow label="Teléfono" value={data.parent.phone ?? '—'} />
+                  <FichaRow label="Dirección" value={data.parent.address ?? '—'} />
+                  <FichaRow label="Radio búsqueda" value={`${data.parent.maxDistanceKm ?? 15} km`} />
+                </FichaSection>
+              )}
+
+              {data.identityCheck && (
+                <FichaSection title="Antecedentes">
+                  <FichaRow label="Estado" value={IC_LABELS[data.identityCheck.status] ?? data.identityCheck.status} />
+                  {data.identityCheck.requestedAt && <FichaRow label="Solicitado" value={fmt(data.identityCheck.requestedAt)} />}
+                  {data.identityCheck.resolvedAt && <FichaRow label="Resuelto" value={fmt(data.identityCheck.resolvedAt)} />}
+                  {data.identityCheck.resolvedBy && <FichaRow label="Resuelto por" value={data.identityCheck.resolvedBy} />}
+                  {data.identityCheck.notes && <FichaRow label="Notas" value={data.identityCheck.notes} />}
+                  <FichaRow label="Certificado PDF" value={data.identityCheck.hasCertificado ? '✓ Subido' : '✗ Sin certificado'} />
+                </FichaSection>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FichaSection({ title, children }) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-widest mb-2"
+        style={{ color: 'var(--cuidar-verde-institucional)', letterSpacing: '0.15em' }}>
+        {title}
+      </p>
+      <div className="border divide-y" style={{ borderColor: 'var(--cuidar-borde)' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function FichaRow({ label, value }) {
+  return (
+    <div className="flex items-start gap-4 px-4 py-2.5">
+      <span className="text-xs font-semibold w-36 flex-shrink-0 pt-0.5"
+        style={{ color: 'var(--cuidar-gris-medio)' }}>{label}</span>
+      <span className="text-sm flex-1" style={{ color: 'var(--cuidar-tinta)' }}>{value}</span>
     </div>
   )
 }

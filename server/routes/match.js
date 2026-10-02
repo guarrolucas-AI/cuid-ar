@@ -29,6 +29,11 @@ async function getRateTolerance() {
   return config ? parseFloat(config.value) : 5000
 }
 
+async function getSubscriptionPrice() {
+  const config = await prisma.appConfig.findUnique({ where: { key: 'mp_price_ars' } })
+  return config ? parseFloat(config.value) : null
+}
+
 // Con qué categoría mostrar la tarifa oficial de referencia: si la
 // búsqueda filtró por una categoría puntual, esa; si no (navegando
 // "todas"), la primera de las especialidades del profesional que tenga
@@ -47,7 +52,9 @@ function pickOfficialRate(pro, searchedCategory, officialRates) {
 // existen (hoy solo infantil/limpieza, vía el fetcher de ARCA).
 router.get('/rates', async (req, res) => {
   try {
-    const [rows, toleranceArs] = await Promise.all([getOfficialRateRows(), getRateTolerance()])
+    const [rows, toleranceArs, subscriptionPriceArs] = await Promise.all([
+      getOfficialRateRows(), getRateTolerance(), getSubscriptionPrice(),
+    ])
     const dbMap = Object.fromEntries(rows.map((r) => [r.category, {
       officialRate: r.officialRate,
       officialRateMonthly: r.officialRateMonthly,
@@ -59,7 +66,7 @@ router.get('/rates', async (req, res) => {
       CATEGORIES.map((cat) => [cat, { ...(FALLBACK_RATES[cat] ?? {}), ...(dbMap[cat] ?? {}) }])
     )
     const rates = Object.fromEntries(CATEGORIES.map((cat) => [cat, details[cat].officialRate]))
-    res.json({ rates, details, toleranceArs })
+    res.json({ rates, details, toleranceArs, subscriptionPriceArs })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

@@ -58,6 +58,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const errorRef = useRef(null)
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     if (error && errorRef.current) {
       errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })

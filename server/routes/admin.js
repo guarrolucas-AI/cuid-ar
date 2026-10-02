@@ -384,6 +384,86 @@ router.post('/credentials/:credentialId/verify', async (req, res) => {
   }
 })
 
+// GET /api/admin/users/:userId — ficha completa de un usuario (sin exponer certificadoUrl)
+router.get('/users/:userId', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.userId },
+      select: {
+        id: true, email: true, role: true, status: true,
+        createdAt: true, subscribedAt: true, dni: true, cuil: true,
+        consentimientoAntecedentes: true,
+        professional: {
+          select: {
+            name: true, phone: true, zone: true, categories: true,
+            hourlyRate: true, verified: true, address: true, bio: true, available: true,
+            credentials: true,
+          },
+        },
+        parent: { select: { name: true, phone: true, address: true, maxDistanceKm: true } },
+        identityCheck: {
+          select: { status: true, requestedAt: true, resolvedAt: true, resolvedBy: true, notes: true, certificadoUrl: true },
+        },
+      },
+    })
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' })
+    const { identityCheck, ...rest } = user
+    res.json({
+      ...rest,
+      identityCheck: identityCheck
+        ? (() => { const { certificadoUrl, ...ic } = identityCheck; return { ...ic, hasCertificado: !!certificadoUrl } })()
+        : null,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// DELETE /api/admin/users/:userId — elimina un usuario y todos sus datos relacionados
+router.delete('/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params
+    if (req.user.id === userId)
+      return res.status(400).json({ error: 'No podés eliminar tu propia cuenta.' })
+    const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, email: true } })
+    if (!target) return res.status(404).json({ error: 'Usuario no encontrado' })
+    if (target.role === 'admin') return res.status(400).json({ error: 'No se puede eliminar una cuenta admin.' })
+
+    await prisma.$transaction(async (tx) => {
+      const convIds = (await tx.conversation.findMany({
+        where: { OR: [{ professionalId: userId }, { parentId: userId }] },
+        select: { id: true },
+      })).map((c) => c.id)
+      if (convIds.length) {
+        await tx.message.deleteMany({ where: { conversationId: { in: convIds } } })
+        await tx.conversation.deleteMany({ where: { id: { in: convIds } } })
+      }
+      await tx.notification.deleteMany({ where: { professionalId: userId } })
+      await tx.jobApplication.deleteMany({ where: { professionalId: userId } })
+      await tx.professionalAlertConfig.deleteMany({ where: { professionalId: userId } })
+      await tx.professionalCredential.deleteMany({ where: { professionalId: userId } })
+      await tx.contactRequest.deleteMany({ where: { OR: [{ professionalId: userId }, { parentId: userId }] } })
+      const postIds = (await tx.jobPost.findMany({
+        where: { parentId: userId }, select: { id: true },
+      })).map((p) => p.id)
+      if (postIds.length) {
+        await tx.jobApplication.deleteMany({ where: { jobPostId: { in: postIds } } })
+        await tx.jobPost.deleteMany({ where: { id: { in: postIds } } })
+      }
+      await tx.professional.deleteMany({ where: { userId } })
+      await tx.parent.deleteMany({ where: { userId } })
+      await tx.identityCheck.deleteMany({ where: { userId } })
+      await tx.passwordResetToken.deleteMany({ where: { userId } })
+      await tx.user.delete({ where: { id: userId } })
+    })
+
+    await logAudit(req, 'user.delete', { targetType: 'User', targetId: userId, detail: target.email })
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/admin/parents — incluye dni/cuil para el admin
 // GET /api/admin/audit — últimas acciones del backoffice (auditoría)
 router.get('/audit', async (req, res) => {

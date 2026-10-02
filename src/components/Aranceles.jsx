@@ -14,13 +14,18 @@ const CATEGORY_META = [
 const money = (n) => (n == null ? null : `$${Math.round(n).toLocaleString('es-AR')}`)
 
 export default function Aranceles() {
-  const [details, setDetails] = useState(null)
+  const [details, setDetails]                 = useState(null)
+  const [subscriptionPrice, setSubscriptionPrice] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch(`${API_BASE}/api/match/rates`)
       .then((r) => r.json())
-      .then((data) => { setDetails(data.details ?? {}); setLoading(false) })
+      .then((data) => {
+        setDetails(data.details ?? {})
+        if (data.subscriptionPriceArs != null) setSubscriptionPrice(data.subscriptionPriceArs)
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
   }, [])
 
@@ -176,6 +181,33 @@ export default function Aranceles() {
               ))}
             </div>
           </>
+        )}
+
+        {/* Subscription price card */}
+        {subscriptionPrice != null && (
+          <div className="mt-8 border p-6 sm:p-8" style={{ background: 'var(--cuidar-verde-institucional)', borderColor: 'var(--cuidar-verde-institucional)' }}>
+            <div className="flex flex-wrap items-center justify-between gap-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1"
+                  style={{ color: 'rgba(255,255,255,0.6)', letterSpacing: '0.15em' }}>
+                  Para Profesionales
+                </p>
+                <h3 className="font-heading font-bold text-xl sm:text-2xl"
+                  style={{ color: '#FFFFFF', letterSpacing: '-0.01em' }}>
+                  Suscripción mensual a CuidAR 360
+                </h3>
+                <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Acceso completo a la plataforma · Perfil verificado · Búsquedas de familias
+                </p>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <div className="font-heading font-bold" style={{ color: '#FFFFFF', fontSize: 'clamp(2rem, 5vw, 3rem)', lineHeight: 1 }}>
+                  ${Number(subscriptionPrice).toLocaleString('es-AR')}
+                </div>
+                <div className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>por mes</div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Legal note */}
