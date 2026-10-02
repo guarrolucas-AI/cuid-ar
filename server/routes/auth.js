@@ -180,7 +180,7 @@ router.post('/forgot-password', async (req, res) => {
 
     await prisma.passwordResetToken.create({ data: { userId: user.id, token, expiresAt } })
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://www.cuidar360.com.ar'
+    const frontendUrl = (process.env.FRONTEND_URL || '').trim() || 'https://www.cuidar360.com.ar'
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`
     const { subject, html } = tpl.resetPassword(resetUrl)
     await sendEmail({ to: email, subject, html })

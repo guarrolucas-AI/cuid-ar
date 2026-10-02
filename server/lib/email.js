@@ -65,14 +65,18 @@ export const tpl = {
     subject: 'CUID_AR — Restablecer contraseña',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#14b8a6">Restablecer contraseña</h2>
+        <h2 style="color:#1F4D3A">Restablecer contraseña</h2>
         <p>Recibimos una solicitud para restablecer tu contraseña.</p>
         <p>El enlace expira en <strong>1 hora</strong>. Si no solicitaste esto, ignorá este email.</p>
         <a href="${resetUrl}"
-           style="display:inline-block;margin-top:16px;padding:12px 24px;background:#14b8a6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">
+           style="display:inline-block;margin-top:16px;padding:12px 24px;background:#1F4D3A;color:#fff;text-decoration:none;font-weight:bold">
           Restablecer contraseña
         </a>
-        <p style="margin-top:24px;font-size:12px;color:#888">CUID_AR — Buenos Aires, Argentina</p>
+        <p style="margin-top:20px;font-size:12px;color:#555">
+          Si el botón no funciona, copiá y pegá este enlace en tu navegador:<br>
+          <a href="${resetUrl}" style="color:#1F4D3A;word-break:break-all">${resetUrl}</a>
+        </p>
+        <p style="margin-top:24px;font-size:12px;color:#888">CuidAR 360 — Buenos Aires, Argentina</p>
       </div>`,
   }),
 
