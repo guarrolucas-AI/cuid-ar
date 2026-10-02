@@ -63,7 +63,8 @@ router.post('/register', async (req, res) => {
       }
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } })
+    const emailNorm = email.toLowerCase().trim()
+    const existing = await prisma.user.findUnique({ where: { email: emailNorm } })
     if (existing) return res.status(409).json({ error: 'El email ya está registrado' })
 
     const hashed = await bcrypt.hash(password, 10)
@@ -76,7 +77,7 @@ router.post('/register', async (req, res) => {
 
     const user = await prisma.user.create({
       data: {
-        email,
+        email: emailNorm,
         password: hashed,
         role,
         dni:  dniClean,
@@ -139,7 +140,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email?.toLowerCase().trim() },
       include: { professional: true, parent: true },
     })
     if (!user) return res.status(401).json({ error: 'Credenciales inválidas' })
@@ -174,7 +175,7 @@ router.get('/me', auth, async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body
-    const user = await prisma.user.findUnique({ where: { email } })
+    const user = await prisma.user.findUnique({ where: { email: email?.toLowerCase().trim() } })
     // Siempre responde 200 para no revelar si el email existe
     if (!user) return res.json({ ok: true })
 

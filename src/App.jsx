@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -11,6 +11,25 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import LegalPage from './pages/LegalPage'
 import SearchPage from './pages/SearchPage'
 import CargarAntecedentesPage from './pages/CargarAntecedentesPage'
+
+function NotFoundPage() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-4"
+      style={{ background: 'var(--cuidar-nieve)' }}>
+      <p className="text-6xl font-bold mb-4" style={{ color: 'var(--cuidar-verde-institucional)' }}>404</p>
+      <h1 className="font-heading text-2xl font-bold mb-2" style={{ color: 'var(--cuidar-tinta)' }}>
+        Página no encontrada
+      </h1>
+      <p className="text-sm mb-8" style={{ color: 'var(--cuidar-gris-suave)' }}>
+        El enlace que seguiste no existe o fue movido.
+      </p>
+      <Link to="/" className="px-6 py-3 text-white text-sm font-bold"
+        style={{ background: 'var(--cuidar-verde-institucional)' }}>
+        Volver al inicio
+      </Link>
+    </div>
+  )
+}
 
 function App() {
   return (
@@ -34,6 +53,7 @@ function App() {
               <CargarAntecedentesPage />
             </ProtectedRoute>
           } />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

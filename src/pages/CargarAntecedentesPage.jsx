@@ -93,7 +93,7 @@ export default function CargarAntecedentesPage() {
         <p className="text-xs mb-6" style={{ color: '#6b7280' }}>
           Podés obtenerlo de forma gratuita en el Registro Nacional de Reincidencia (MJ de la Nación)
           en{' '}
-          <a href="https://www.argentina.gob.ar/justicia/reincidencia/trámites/solicitar-certificado"
+          <a href="https://www.argentina.gob.ar/justicia/reincidencia/tramites/solicitar-certificado"
             target="_blank" rel="noreferrer"
             style={{ color: 'var(--cuidar-verde-institucional)', textDecoration: 'underline' }}>
             argentina.gob.ar

@@ -62,7 +62,7 @@ export const tpl = {
   }),
 
   resetPassword: (resetUrl) => ({
-    subject: 'CUID_AR — Restablecer contraseña',
+    subject: 'CuidAR 360 — Restablecer contraseña',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h2 style="color:#1F4D3A">Restablecer contraseña</h2>

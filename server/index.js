@@ -1,6 +1,8 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
+import { rateLimit } from 'express-rate-limit'
 import authRoutes from './routes/auth.js'
 import checkoutRoutes from './routes/checkout.js'
 import webhookRoutes from './routes/webhooks.js'
@@ -16,6 +18,17 @@ import cronRoutes from './routes/cron.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
+
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
+
+// Rate limiting: 60 req/min por IP en rutas de auth
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos. Esperá un minuto.' },
+})
 
 // CORS: acepta localhost en dev, la URL del frontend en prod, y preview URLs de Vercel
 const allowed = [
@@ -33,14 +46,16 @@ app.use(cors({
     if (allowed.includes(origin) || /^https:\/\/cuid-ar-[a-z0-9-]+\.vercel\.app$/.test(origin)) {
       return cb(null, true)
     }
-    return cb(new Error('CORS'))
+    const err = new Error('CORS')
+    err.status = 403
+    return cb(err)
   },
   credentials: true,
 }))
 
 app.use(express.json())
 
-app.use('/api/auth',         authRoutes)
+app.use('/api/auth',         authLimiter, authRoutes)
 app.use('/api/checkout',     checkoutRoutes)
 app.use('/api/webhooks',     webhookRoutes)
 app.use('/api/match',        matchRoutes)

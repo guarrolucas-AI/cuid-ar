@@ -167,7 +167,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Campos comunes */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>Nombre completo</label>
                 <input type="text" required value={form.name} onChange={e => set('name', e.target.value)}
@@ -197,7 +197,7 @@ export default function RegisterPage() {
               <p className="text-xs" style={{ color: 'var(--cuidar-gris-suave)' }}>
                 Requerido para todos los usuarios. Tus datos son privados y solo los ve el equipo de CuidAR 360 para garantizar la seguridad de la plataforma.
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>DNI <span style={{ color: '#D9544D' }}>*</span></label>
                   <input type="text" required value={form.dni} onChange={e => set('dni', e.target.value)}
@@ -213,7 +213,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>Contraseña</label>
                 <input type="password" required minLength={6} value={form.password}
@@ -299,7 +299,7 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--cuidar-tinta)' }}>Zona donde trabajás</label>
                     <select value={form.zone} onChange={e => set('zone', e.target.value)} required
