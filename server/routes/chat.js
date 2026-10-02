@@ -148,7 +148,8 @@ router.post('/conversations/:id/attachments', upload.single('file'), async (req,
 router.get('/attachments', async (req, res) => {
   try {
     const { pathname } = req.query
-    if (!pathname || !pathname.startsWith('chat/')) return res.status(400).json({ error: 'pathname inválido' })
+    if (!pathname || !pathname.startsWith('chat/') || pathname.includes('..'))
+      return res.status(400).json({ error: 'pathname inválido' })
 
     const conversationId = pathname.split('/')[1]
     const { conversation } = await loadConversationForUser(conversationId, req.user.id)

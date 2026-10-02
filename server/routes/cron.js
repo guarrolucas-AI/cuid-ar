@@ -4,12 +4,12 @@ import { fetchCasasParticularesRates } from '../lib/officialRates.js'
 
 const router = Router()
 
-// POST /api/cron/rates — disparado por Vercel Cron el día 3 de cada mes
+// GET /api/cron/rates — disparado por Vercel Cron el día 3 de cada mes
 // a las 12:00 UTC (da tiempo a que ARCA publique el PDF del mes).
 // Seguridad: Vercel inyecta automáticamente `Authorization: Bearer <CRON_SECRET>`
 // en cada disparo. En local (sin CRON_SECRET en env) el check se omite para
 // facilitar pruebas manuales.
-router.post('/rates', async (req, res) => {
+router.get('/rates', async (req, res) => {
   const secret = process.env.CRON_SECRET
   if (secret) {
     const bearer = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '')
@@ -48,10 +48,10 @@ router.post('/rates', async (req, res) => {
   }
 })
 
-// POST /api/cron/suspend-overdue — corre a las 6 UTC todos los días.
+// GET /api/cron/suspend-overdue — corre a las 6 UTC todos los días.
 // Marca como 'suspended_docs' a los usuarios suscritos que llevan más de
 // 5 días sin presentar un certificado de antecedentes aprobado.
-router.post('/suspend-overdue', async (req, res) => {
+router.get('/suspend-overdue', async (req, res) => {
   const secret = process.env.CRON_SECRET
   if (secret) {
     const bearer = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '')

@@ -44,6 +44,9 @@ router.post('/register', async (req, res) => {
     if (!dni || !validateDni(dni)) return res.status(400).json({ error: 'DNI inválido. Ingresá 7 u 8 dígitos sin puntos.' })
     if (!cuil || !validateCuil(cuil)) return res.status(400).json({ error: 'CUIL inválido. Verificá el formato XX-XXXXXXXX-X.' })
 
+    if (!['padre', 'profesional'].includes(role))
+      return res.status(400).json({ error: 'Rol inválido.' })
+
     if (role === 'profesional' && (!Array.isArray(categories) || categories.length === 0)) {
       return res.status(400).json({ error: 'Elegí al menos una especialidad' })
     }
